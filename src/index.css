@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+
+  .btn-primary {
+    @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-colors;
+  }
+
+  .component-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@layer utilities {
+  @media (max-width: 1024px) {
+    .component-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .component-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .card {
+      @apply p-4;
+    }
+  }
+
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-3xl;
+    }
+    
+    h2 {
+      @apply text-2xl;
+    }
+    
+    h3 {
+      @apply text-xl;
+    }
+    
+    .text-6xl {
+      @apply text-4xl;
+    }
+    
+    .text-4xl {
+      @apply text-2xl;
+    }
+    
+    .text-2xl {
+      @apply text-xl;
+    }
+    
+    .text-xl {
+      @apply text-lg;
+    }
+    
+    .text-lg {
+      @apply text-base;
+    }
+  }
+} 
