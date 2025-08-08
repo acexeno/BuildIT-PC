@@ -1,5 +1,5 @@
 <?php
-// Database setup script for BUILD IT:PC
+// Database setup script for SIMS
 
 require_once __DIR__ . '/backend/config/database.php';
 

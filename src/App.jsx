@@ -9,6 +9,7 @@ import ChatSupport from './pages/ChatSupport'
 import MyBuilds from './pages/MyBuilds'
 import MyOrders from './pages/MyOrders'
 import PrebuiltPCs from './pages/PrebuiltPCs'
+import PublicBuilds from './pages/PublicBuilds'
 import Notifications from './pages/Notifications'
 import AdminDashboard from './pages/AdminDashboard'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
@@ -152,6 +153,7 @@ const AppContent = () => {
       setCurrentPage('employee-dashboard');
       setShowAuth(null);
     } else {
+      // For all other pages, just set the current page
       setCurrentPage(page)
       setShowAuth(null)
     }
@@ -233,7 +235,7 @@ const AppContent = () => {
           
           {/* show sidebars for admin users */}
           {(user?.roles?.includes('Super Admin') || user?.roles?.includes('Admin') || user?.roles?.includes('Employee')) ? (
-            <div className="flex">
+            <div className="grid grid-cols-1 md:grid-cols-[288px_1fr] xl:grid-cols-[320px_1fr] min-h-screen w-full">
               {/* sidebar for admin users */}
               {(user?.roles?.includes('Super Admin') || user?.roles?.includes('Admin')) && (
                 <AdminSidebar
@@ -246,23 +248,25 @@ const AppContent = () => {
                 />
               )}
               
-                               {/* sidebar for employee users */}
-                 {user?.roles?.includes('Employee') && !user?.roles?.includes('Admin') && !user?.roles?.includes('Super Admin') && (
-                   <EmployeeSidebar
-                     currentPage={currentPage}
-                     onPageChange={(page) => {
-                       // for employee users, we need to handle both page changes and internal tab changes
-                       if (page === 'employee-dashboard' || ['inventory', 'orders-management', 'notifications', 'sales-reports', 'system-reports', 'pc-assembly', 'prebuilt-management'].includes(page)) {
-                         handlePageChange(page);
-                       }
-                     }}
-                     user={user}
-                     onLogout={handleLogout}
-                   />
-                 )}
+              {/* sidebar for employee users */}
+              {user?.roles?.includes('Employee') && !user?.roles?.includes('Admin') && !user?.roles?.includes('Super Admin') && (
+                <EmployeeSidebar
+                  currentPage={currentPage}
+                  onPageChange={(page) => {
+                    // for employee users, we need to handle both page changes and internal tab changes
+                    if (page === 'employee-dashboard' || ['inventory', 'orders-management', 'notifications', 'sales-reports', 'system-reports', 'pc-assembly', 'prebuilt-management', 'admin-chat-support'].includes(page)) {
+                      handlePageChange(page);
+                    }
+                  }}
+                  user={user}
+                  onLogout={handleLogout}
+                />
+              )}
               
               {/* main content area with sidebar */}
-              <main className="flex-1 bg-gray-50">
+              <main className="bg-gray-50 min-h-screen relative">
+                {/* Add top margin for mobile to account for menu button */}
+                <div className="md:hidden h-16"></div>
                 {/* show login/register forms in the main area when needed */}
                 {showAuth === 'login' && (
               <Login onLogin={async (u) => {
@@ -333,21 +337,8 @@ const AppContent = () => {
                                                  {currentPage === 'employee-dashboard' && user?.roles?.includes('Employee') && (
                   <EmployeeDashboard user={user} setUser={setUser} initialTab="employee-dashboard" />
                 )}
-                {currentPage === 'sales-reports' && user?.roles?.includes('Employee') && (
-                  <EmployeeDashboard initialTab="sales-reports" user={user} setUser={setUser} />
-                )}
-                {currentPage === 'system-reports' && user?.roles?.includes('Employee') && (
-                  <EmployeeDashboard initialTab="system-reports" user={user} setUser={setUser} />
-                )}
-                {currentPage === 'prebuilt-management' && user?.roles?.includes('Employee') && (
-                  <EmployeeDashboard initialTab="prebuilt-management" user={user} setUser={setUser} />
-                )}
-                {currentPage === 'pc-assembly' && user?.roles?.includes('Employee') && (
-                  <EmployeeDashboard initialTab="pc-assembly" user={user} setUser={setUser} />
-                )}
-                {currentPage === 'notifications' && user?.roles?.includes('Employee') && (
-                  <EmployeeDashboard initialTab="notifications" user={user} setUser={setUser} />
-                )}
+                {/* Employee pages handled in the array below */}
+                {/* Employee notifications handled in the array below */}
                 
                 {/* regular customer pages */}
                 {currentPage === 'home' && <Home setCurrentPage={setCurrentPage} setSelectedComponents={setSelectedComponents} />}
@@ -357,9 +348,7 @@ const AppContent = () => {
                 {currentPage === 'pc-assembly' && user?.roles?.includes('Super Admin') && (
                   <SuperAdminDashboard initialTab="pc-assembly" />
                 )}
-                {currentPage === 'pc-assembly' && user?.roles?.includes('Admin') && (
-                  <AdminDashboard initialTab="pc-assembly" />
-                )}
+                {/* Admin pc-assembly handled in the individual conditions above */}
                 {currentPage === 'pc-assembly' && (!user?.roles || (!user.roles.includes('Super Admin') && !user.roles.includes('Admin'))) && (
                   <PCAssembly 
                     setCurrentPage={setCurrentPage}
@@ -376,18 +365,34 @@ const AppContent = () => {
                 )}
                 {currentPage === 'chat-support' && <ChatSupport user={user} setCurrentPage={setCurrentPage} />}
                 {currentPage === 'my-builds' && user && <MyBuilds setCurrentPage={setCurrentPage} setSelectedComponents={setSelectedComponents} />}
+                  {currentPage === 'public-builds' && <PublicBuilds setCurrentPage={setCurrentPage} setSelectedComponents={setSelectedComponents} />}
                 {currentPage === 'my-orders' && user && <MyOrders setCurrentPage={setCurrentPage} />}
-                {currentPage === 'notifications' && user && <Notifications user={user} />}
+                {currentPage === 'notifications' && user && !user?.roles?.includes('Admin') && !user?.roles?.includes('Employee') && <Notifications user={user} />}
                 {currentPage === 'admin-chat-support' && user?.roles?.includes('Admin') && (
                   <AdminChatSupport user={user} />
+                )}
+                {currentPage === 'admin-chat-support' && user?.roles?.includes('Super Admin') && (
+                  <AdminChatSupport user={user} />
+                )}
+                {currentPage === 'admin-chat-support' && user?.roles?.includes('Employee') && (
+                  <EmployeeDashboard initialTab={currentPage} user={user} setUser={setUser} />
                 )}
                 
                 {/* admin/employee management pages */}
                 {['inventory', 'orders-management', 'reports'].includes(currentPage) && user?.roles?.includes('Super Admin') && (
                   <SuperAdminDashboard initialTab={currentPage} user={user} />
                 )}
-                {['inventory', 'orders-management'].includes(currentPage) && user?.roles?.includes('Employee') && (
-                  <EmployeeDashboard initialTab={currentPage} user={user} setUser={setUser} />
+                {['inventory', 'orders-management', 'pc-assembly', 'prebuilt-management', 'sales-reports', 'system-reports', 'notifications'].includes(currentPage) && user?.roles?.includes('Employee') && (
+                  // Check permissions before routing to specific tabs
+                  (() => {
+                    if (currentPage === 'inventory' && (user?.can_access_inventory === 0 || user?.can_access_inventory === '0' || user?.can_access_inventory === false || user?.can_access_inventory === 'false')) {
+                      return <EmployeeDashboard initialTab="employee-dashboard" user={user} setUser={setUser} />;
+                    }
+                    if (currentPage === 'orders-management' && (user?.can_access_orders === 0 || user?.can_access_orders === '0' || user?.can_access_orders === false || user?.can_access_orders === 'false')) {
+                      return <EmployeeDashboard initialTab="employee-dashboard" user={user} setUser={setUser} />;
+                    }
+                    return <EmployeeDashboard initialTab={currentPage} user={user} setUser={setUser} />;
+                  })()
                 )}
 
                 {/* super admin only pages */}
@@ -463,8 +468,9 @@ const AppContent = () => {
                   )}
                   {currentPage === 'chat-support' && <ChatSupport user={user} setCurrentPage={setCurrentPage} />}
                   {currentPage === 'my-builds' && user && <MyBuilds setCurrentPage={setCurrentPage} setSelectedComponents={setSelectedComponents} />}
+                  {currentPage === 'public-builds' && <PublicBuilds setCurrentPage={setCurrentPage} setSelectedComponents={setSelectedComponents} />}
                   {currentPage === 'my-orders' && user && <MyOrders setCurrentPage={setCurrentPage} />}
-                  {currentPage === 'notifications' && user && <Notifications user={user} />}
+                  {currentPage === 'notifications' && user && !user?.roles?.includes('Admin') && !user?.roles?.includes('Employee') && <Notifications user={user} />}
                 </>
               )}
             </main>

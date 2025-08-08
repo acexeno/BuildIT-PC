@@ -1,10 +1,10 @@
-# BUILD IT:PC - Desktop PC Building & Compatibility Checker System
+# SIMS - Desktop PC Building & Compatibility Checker System
 
 A modern **desktop-only** web application for building custom PCs with real-time compatibility checking, user management, and comprehensive business features.
 
 ## ⚠️ Desktop-Only Application
 
-**BUILD IT:PC is designed exclusively for desktop computers and is not compatible with mobile devices or tablets.** The application requires a minimum screen width of 1024px for optimal functionality.
+**SIMS is designed exclusively for desktop computers and is not compatible with mobile devices or tablets.** The application requires a minimum screen width of 1024px for optimal functionality.
 
 ## Features
 
@@ -19,6 +19,7 @@ A modern **desktop-only** web application for building custom PCs with real-time
 - **Chat Support**: Real-time chat support with customer service representatives
 - **Notifications**: Real-time notifications for order updates and system alerts
 - **User Profiles**: Manage personal information and preferences
+- **FAQ Section**: Comprehensive help and support information
 
 ### For Administrators & Employees
 - **Role-Based Access Control**: Super Admin, Admin, Employee, and Client roles with different permissions
@@ -27,8 +28,9 @@ A modern **desktop-only** web application for building custom PCs with real-time
 - **Sales Reports**: Comprehensive analytics and reporting dashboard
 - **User Management**: Manage customer accounts and employee access
 - **Prebuilt PC Management**: Create and manage pre-configured systems
-- **Chat Support Management**: Handle customer inquiries through admin chat interface
+- **Chat Support Management**: Handle customer inquiries through admin chat interface with priority management and session tracking
 - **System Settings**: Configure application settings and preferences
+- **Statistics Dashboard**: Real-time metrics and analytics for chat support
 
 ### Technical Features
 - **JWT Authentication**: Secure token-based authentication system
@@ -37,6 +39,8 @@ A modern **desktop-only** web application for building custom PCs with real-time
 - **Database Management**: Comprehensive MySQL database with proper relationships
 - **API-First Architecture**: RESTful API endpoints for all functionality
 - **Component Database**: Extensive database of PC components with real pricing and stock information
+- **Chat System**: Real-time messaging with session management and priority handling
+- **Notification System**: Persistent notifications with read/unread status tracking
 
 ## Tech Stack
 
@@ -80,7 +84,7 @@ npm install
 npm run dev
 ```
 
-The React application will be available at `http://localhost:5175`
+The React application will be available at `http://localhost:5175` (or the port specified in package.json)
 
 ### 3. Backend Setup
 
@@ -91,9 +95,9 @@ The React application will be available at `http://localhost:5175`
 
 #### Database Setup
 1. Open phpMyAdmin at `http://localhost/phpmyadmin`
-2. Create a new database called `builditpc_db`
+2. Create a new database called `sims_db` (or use existing `builditpc_db`)
 3. Import the database schema:
-   - Go to the `builditpc_db` database
+   - Go to the database
    - Click "Import" tab
    - Choose the file `backend/database/schema.sql`
    - Click "Go" to import
@@ -114,7 +118,7 @@ The React application will be available at `http://localhost:5175`
 Edit `backend/config/database.php` if needed:
 ```php
 $host = 'localhost';
-$dbname = 'builditpc_db';
+$dbname = 'sims_db'; // or 'builditpc_db' if using existing database
 $username = 'root';
 $password = ''; // Set your MySQL password if different
 ```
@@ -196,6 +200,9 @@ capstone2/
 ├── package.json
 ├── vite.config.js
 ├── tailwind.config.js
+├── setup.md
+├── CHAT_SUPPORT_GUIDE.md
+├── COMPONENT_IMAGES_GUIDE.md
 └── README.md
 ```
 
@@ -237,6 +244,8 @@ capstone2/
 - Real-time chat with customer service
 - Get help with component selection
 - Technical support for PC building
+- Guest chat support for non-registered users
+- Quick question suggestions for common issues
 
 ### Admin Features
 
@@ -297,9 +306,13 @@ The system performs comprehensive compatibility checks:
 - `PUT /backend/api/index.php?endpoint=orders` - Update order status
 
 ### Chat
-- `GET /backend/api/chat.php?sessions` - Get chat sessions
-- `POST /backend/api/chat.php?message` - Send chat message
-- `GET /backend/api/chat.php?messages` - Get chat messages
+- `GET /backend/api/chat.php?sessions` - Get chat sessions (admin)
+- `GET /backend/api/chat.php?messages&session_id=X` - Get messages for session
+- `POST /backend/api/chat.php?send` - Send a message
+- `POST /backend/api/chat.php?resolve` - Mark chat as resolved
+- `POST /backend/api/chat.php?reopen` - Reopen resolved chat
+- `GET /backend/api/chat.php?stats` - Get chat statistics
+- `POST /backend/api/chat.php?update_priority` - Update chat priority
 
 ### Notifications
 - `GET /backend/api/notifications.php` - Get user notifications
@@ -371,10 +384,30 @@ The application uses a comprehensive database schema with:
 - Notification system for real-time updates
 - Build management for saved configurations
 
+## Recent Updates
+
+### Version 2.0 - SIMS Rebranding
+- **Complete Branding Update**: Changed from "BUILD IT:PC" to "SIMS" throughout the entire application
+- **Enhanced Chat Support System**: Implemented comprehensive real-time chat functionality with:
+  - Guest user support
+  - Priority management (low, normal, high, urgent)
+  - Session tracking and resolution
+  - Real-time statistics dashboard
+  - Quick question suggestions
+- **Improved Notification System**: Enhanced notification management with persistent storage
+- **Updated Documentation**: Comprehensive guides for chat support and component images
+- **Database Schema Updates**: Added chat sessions, messages, and enhanced notification tables
+
+### Key Improvements
+- **Better User Experience**: More intuitive chat interface with floating button
+- **Admin Efficiency**: Advanced chat management tools for support staff
+- **System Reliability**: Enhanced error handling and data persistence
+- **Documentation**: Complete setup and troubleshooting guides
+
 ## License
 
 This project is licensed under the MIT License.
 
 ---
 
-**BUILD IT:PC** - Making PC building simple, reliable, and enjoyable on desktop computers! 
+**SIMS** - Making PC building simple, reliable, and enjoyable on desktop computers! 

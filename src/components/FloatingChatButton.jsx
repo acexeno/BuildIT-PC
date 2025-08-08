@@ -1,74 +1,117 @@
-import React, { useState } from 'react';
-import { MessageSquare, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MessageSquare, X, Minimize2, Maximize2 } from 'lucide-react';
 import ChatSupport from '../pages/ChatSupport';
 
-const FloatingChatButton = ({ user, setCurrentPage }) => {
-  // Hide for Super Admins
-  if (user?.roles?.includes('Super Admin')) return null;
+const FloatingChatButton = ({ user }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [sessionId, setSessionId] = useState(() => {
+    return localStorage.getItem('builditpc_chat_session_id') || null;
+  });
 
-  const [open, setOpen] = useState(false);
+  // Check for unread messages
+  useEffect(() => {
+    if (!sessionId || !user) return;
+
+    const checkUnreadMessages = async () => {
+      try {
+        const res = await fetch(`/backend/api/chat.php?unread_count&user_id=${user.id}`);
+        const data = await res.json();
+        if (data.success) {
+          setUnreadCount(data.unread_count);
+        }
+      } catch (error) {
+        console.error('Error checking unread count:', error);
+      }
+    };
+
+    checkUnreadMessages();
+    const interval = setInterval(checkUnreadMessages, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [sessionId, user]);
+
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      setIsMinimized(false);
+    }
+  };
+
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
+
+  // Don't show for admin/employee users (they have their own chat interface)
+  if (user && user.roles && (user.roles.includes('Admin') || user.roles.includes('Employee'))) {
+    return null;
+  }
 
   return (
     <>
-      {/* Floating Button */}
-      {!open && (
+      {/* Floating Chat Button */}
+      <div className="fixed bottom-6 right-6 z-50">
         <button
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full bg-green-600 shadow-xl flex items-center justify-center hover:bg-green-700 transition-colors focus:outline-none"
-          onClick={() => setOpen(true)}
-          aria-label="Open chat support"
+          onClick={toggleChat}
+          className="bg-green-600 hover:bg-green-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center relative"
+          title="Chat Support"
         >
-          <MessageSquare className="w-8 h-8 text-white" />
+          <MessageSquare className="w-6 h-6" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
-      )}
-      {/* Animated Chat Widget */}
-      <div
-        className={`fixed z-50 right-6 bottom-6 sm:bottom-24 w-[350px] max-w-full sm:w-[350px] h-[500px] bg-white rounded-xl border border-gray-200 shadow-2xl flex flex-col transition-all duration-300 ease-in-out
-          ${open ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-8 pointer-events-none'}
-          sm:right-6 sm:bottom-24
-        `}
-        style={{ boxShadow: '0 8px 32px 0 rgba(60, 72, 88, 0.18)' }}
-      >
-        {/* Header */}
-        <div className="relative flex items-center gap-4 bg-green-600 text-white px-6 py-4 rounded-t-xl">
-          <div className="flex items-center justify-center w-10 h-10 bg-white bg-opacity-20 rounded-full mr-2">
-            <MessageSquare className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="font-bold text-lg">BUILD IT:PC Support</div>
-            <div className="text-xs opacity-80">Online • Fast response</div>
-          </div>
-          <button
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20 transition focus:outline-none"
-            onClick={() => setOpen(false)}
-            aria-label="Close chat"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
-        </div>
-        {/* Divider */}
-        <div className="h-[1.5px] bg-green-100 w-full" />
-        {/* Chat Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ChatSupport user={user} setCurrentPage={setCurrentPage} customStyles={{
-            messagesArea: 'scrollbar-thin scrollbar-thumb-green-200 scrollbar-track-green-50',
-            inputArea: 'bg-gray-50',
-            sendButton: 'bg-green-600 hover:bg-green-700 text-white rounded-full px-6 py-2 font-semibold flex items-center gap-2 transition',
-          }} hideHeader={true} />
-        </div>
       </div>
-      {/* Responsive full-width on mobile */}
-      <style>{`
-        @media (max-width: 640px) {
-          .floating-chat-widget {
-            width: 100vw !important;
-            right: 0 !important;
-            left: 0 !important;
-            border-radius: 0.75rem 0.75rem 0 0 !important;
-            height: 70vh !important;
-            min-height: 350px !important;
-          }
-        }
-      `}</style>
+
+      {/* Chat Window */}
+      {isOpen && (
+        <div className="fixed bottom-6 right-6 z-50 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 rounded-t-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              <span className="font-semibold">Chat Support</span>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleMinimize}
+                className="text-white hover:text-gray-200 transition-colors p-1"
+                title={isMinimized ? "Maximize" : "Minimize"}
+              >
+                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={toggleChat}
+                className="text-white hover:text-gray-200 transition-colors p-1"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Chat Content */}
+          {!isMinimized && (
+            <div className="flex-1 overflow-hidden">
+              <ChatSupport 
+                user={user} 
+                hideHeader={true}
+                customStyles={{
+                  messagesArea: 'p-4',
+                  inputArea: 'bg-gray-50'
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

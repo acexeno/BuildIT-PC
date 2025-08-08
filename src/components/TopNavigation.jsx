@@ -46,11 +46,13 @@ const TopNavigation = ({ currentPage, onPageChange, user, onLogout, onSuperAdmin
     { id: 'home', name: 'HOME', icon: <Home className="w-4 h-4" /> },
     { id: 'prebuilt-pcs', name: 'PREBUILT PCS', icon: <Package className="w-4 h-4" /> },
     { id: 'pc-assembly', name: 'BUILD A PC', icon: <Cpu className="w-4 h-4" /> },
+    { id: 'public-builds', name: 'COMMUNITY', icon: <Users className="w-4 h-4" /> },
   ]
 
   const userMenuItems = user ? [
     ...(user.roles?.includes('Client') ? [
       { id: 'my-builds', name: 'My Builds', icon: <Package className="w-4 h-4" /> },
+      { id: 'public-builds', name: 'Community Builds', icon: <Users className="w-4 h-4" /> },
       { id: 'my-orders', name: 'My Orders', icon: <FileText className="w-4 h-4" /> },
       { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="w-4 h-4" /> },
       { id: 'notifications', name: 'Notifications', icon: <Bell className="w-4 h-4" />, badge: unreadCount },
@@ -80,7 +82,7 @@ const TopNavigation = ({ currentPage, onPageChange, user, onLogout, onSuperAdmin
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">BUILD IT:PC</h1>
+              <h1 className="text-lg font-bold text-gray-900">SIMS</h1>
             </div>
           </div>
 

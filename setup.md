@@ -1,4 +1,4 @@
-# BUILD IT:PC - Setup Guide
+# SIMS - Setup Guide
 
 ## Quick Start
 

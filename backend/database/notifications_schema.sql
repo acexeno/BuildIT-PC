@@ -1,4 +1,4 @@
--- Notifications table for BUILD IT:PC
+-- Notifications table for SIMS
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Insert some sample notifications for testing
 INSERT INTO notifications (user_id, type, title, message, priority, read_status) VALUES
-(1, 'system', 'Welcome to BUILD IT:PC!', 'Thank you for joining our platform. Start building your dream PC today!', 'low', 1),
+(1, 'system', 'Welcome to SIMS!', 'Thank you for joining our platform. Start building your dream PC today!', 'low', 1),
 (1, 'order', 'Order #12345 Status Updated', 'Your order has been shipped and is on its way to you.', 'high', 0),
 (1, 'build', 'Build Compatibility Alert', 'Your saved build "Gaming PC 2024" has compatibility issues with the selected GPU.', 'medium', 0),
 (1, 'promo', 'Special Discount Available', 'Get 10% off on all gaming components this weekend!', 'medium', 1),

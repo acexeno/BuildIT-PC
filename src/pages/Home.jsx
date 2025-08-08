@@ -113,18 +113,18 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
   const faqData = [
     {
       id: 1,
-      question: "How does BUILD IT:PC's compatibility checker work?",
+      question: "How does SIMS's compatibility checker work?",
       answer: "Our advanced compatibility checker uses a sophisticated algorithm that analyzes multiple aspects of your selected components in real-time. It checks CPU socket compatibility with motherboards (ensuring AM5 CPUs work with AM5 motherboards, LGA1700 with LGA1700, etc.), validates RAM type matching (DDR4 vs DDR5), calculates power supply wattage requirements based on component TDP ratings, and verifies case form factor compatibility. The system also considers physical dimensions, cooling requirements, and expansion slot availability. When you select components, the checker immediately updates the compatibility score and provides specific feedback on any issues, helping you make informed decisions before purchasing."
     },
     {
       id: 2,
       question: "Can I save my PC build for later?",
-      answer: "Currently, BUILD IT:PC operates as a real-time building and compatibility checking platform. While we don't have a persistent save feature yet, you can easily recreate your build by selecting the same components from our comprehensive database. We're actively developing build saving, sharing, and export features that will allow you to save multiple builds, share them with friends, export parts lists to retailers, and even receive notifications when component prices change. These features will be available in upcoming updates, making it easier to plan and compare different build configurations over time."
+      answer: "Currently, SIMS operates as a real-time building and compatibility checking platform. While we don't have a persistent save feature yet, you can easily recreate your build by selecting the same components from our comprehensive database. We're actively developing build saving, sharing, and export features that will allow you to save multiple builds, share them with friends, export parts lists to retailers, and even receive notifications when component prices change. These features will be available in upcoming updates, making it easier to plan and compare different build configurations over time."
     },
     {
       id: 3,
-      question: "Are the component prices on BUILD IT:PC accurate?",
-      answer: "The prices shown on BUILD IT:PC are carefully researched market prices in Philippine Peso (₱) based on current retail data from major Philippine retailers and online marketplaces. However, actual prices may vary due to factors like regional availability, seasonal fluctuations, import duties, and retailer-specific promotions. We recommend using our prices as a baseline for budgeting and comparison, then checking with local retailers like PCHub, DynaQuest, EasyPC, or online platforms like Lazada and Shopee for the most current pricing. Our price estimates are updated regularly to reflect market trends and new product releases."
+      question: "Are the component prices on SIMS accurate?",
+              answer: "The prices shown on SIMS are carefully researched market prices in Philippine Peso (₱) based on current retail data from major Philippine retailers and online marketplaces. However, actual prices may vary due to factors like regional availability, seasonal fluctuations, import duties, and retailer-specific promotions. We recommend using our prices as a baseline for budgeting and comparison, then checking with local retailers like PCHub, DynaQuest, EasyPC, or online platforms like Lazada and Shopee for the most current pricing. Our price estimates are updated regularly to reflect market trends and new product releases."
     },
     {
       id: 4,
@@ -138,8 +138,8 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
     },
     {
       id: 6,
-      question: "Can I use BUILD IT:PC on mobile devices?",
-      answer: "BUILD IT:PC is fully responsive and optimized for all devices, including smartphones and tablets. The interface automatically adapts to your screen size, with touch-friendly buttons, swipe gestures for component browsing, and optimized layouts for smaller screens. While the desktop experience offers the most comprehensive view with side-by-side component comparison and detailed specifications, the mobile version provides full functionality for building and checking compatibility. You can browse components, check compatibility, view prebuilt recommendations, and access the FAQ section seamlessly on any device. The mobile interface prioritizes essential features while maintaining the same accuracy and reliability as the desktop version."
+      question: "Can I use SIMS on mobile devices?",
+              answer: "SIMS is fully responsive and optimized for all devices, including smartphones and tablets. The interface automatically adapts to your screen size, with touch-friendly buttons, swipe gestures for component browsing, and optimized layouts for smaller screens. While the desktop experience offers the most comprehensive view with side-by-side component comparison and detailed specifications, the mobile version provides full functionality for building and checking compatibility. You can browse components, check compatibility, view prebuilt recommendations, and access the FAQ section seamlessly on any device. The mobile interface prioritizes essential features while maintaining the same accuracy and reliability as the desktop version."
     },
     {
       id: 7,
@@ -148,18 +148,18 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
     },
     {
       id: 8,
-      question: "Does BUILD IT:PC provide assembly instructions?",
-      answer: "While BUILD IT:PC primarily focuses on component selection and compatibility checking, we provide comprehensive guidance throughout the PC building process. Our platform includes general assembly tips, component installation order recommendations, and common troubleshooting advice. For detailed step-by-step assembly instructions, we recommend consulting the manufacturer manuals that come with each component, as they contain specific installation procedures and safety guidelines. We also provide links to trusted assembly guides and video tutorials from reputable sources. For users who prefer professional assembly, we can recommend local PC building services and provide guidance on what to look for when choosing an assembler. Our goal is to make the entire PC building journey as smooth as possible, from planning to completion."
+      question: "Does SIMS provide assembly instructions?",
+              answer: "While SIMS primarily focuses on component selection and compatibility checking, we provide comprehensive guidance throughout the PC building process. Our platform includes general assembly tips, component installation order recommendations, and common troubleshooting advice. For detailed step-by-step assembly instructions, we recommend consulting the manufacturer manuals that come with each component, as they contain specific installation procedures and safety guidelines. We also provide links to trusted assembly guides and video tutorials from reputable sources. For users who prefer professional assembly, we can recommend local PC building services and provide guidance on what to look for when choosing an assembler. Our goal is to make the entire PC building journey as smooth as possible, from planning to completion."
     },
     {
       id: 9,
       question: "Can I compare different component options side by side?",
-      answer: "Yes! BUILD IT:PC offers comprehensive component comparison features. You can preview individual components to see detailed specifications, performance benchmarks, and user reviews. The compatibility checker helps you understand how different component combinations work together, showing the impact of each choice on your overall build performance and compatibility. You can compare multiple CPUs, GPUs, or other components side-by-side to see differences in specifications, power consumption, and performance metrics. The system also provides performance estimates for different combinations, helping you make informed decisions based on your specific needs and budget. Whether you're choosing between AMD and Intel processors, different GPU tiers, or various storage options, our comparison tools help you understand the trade-offs and make the best choice for your build."
+      answer: "Yes! SIMS offers comprehensive component comparison features. You can preview individual components to see detailed specifications, performance benchmarks, and user reviews. The compatibility checker helps you understand how different component combinations work together, showing the impact of each choice on your overall build performance and compatibility. You can compare multiple CPUs, GPUs, or other components side-by-side to see differences in specifications, power consumption, and performance metrics. The system also provides performance estimates for different combinations, helping you make informed decisions based on your specific needs and budget. Whether you're choosing between AMD and Intel processors, different GPU tiers, or various storage options, our comparison tools help you understand the trade-offs and make the best choice for your build."
     },
     {
       id: 10,
-      question: "Is BUILD IT:PC free to use?",
-      answer: "Yes, BUILD IT:PC is completely free to use! All our core features are available at no cost, including the advanced compatibility checker, comprehensive component database, prebuilt PC recommendations, and all platform tools. We believe that PC building should be accessible to everyone, regardless of budget constraints. Our business model is supported through partnerships with retailers and manufacturers, allowing us to provide accurate pricing and product information while keeping the platform free for users. We're committed to maintaining this free access while continuously improving our features and expanding our component database. There are no hidden fees, premium tiers, or paid features - everything you need to build your perfect PC is available completely free of charge."
+      question: "Is SIMS free to use?",
+              answer: "Yes, SIMS is completely free to use! All our core features are available at no cost, including the advanced compatibility checker, comprehensive component database, prebuilt PC recommendations, and all platform tools. We believe that PC building should be accessible to everyone, regardless of budget constraints. Our business model is supported through partnerships with retailers and manufacturers, allowing us to provide accurate pricing and product information while keeping the platform free for users. We're committed to maintaining this free access while continuously improving our features and expanding our component database. There are no hidden fees, premium tiers, or paid features - everything you need to build your perfect PC is available completely free of charge."
     }
   ]
 
@@ -204,7 +204,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <h1 className="text-4xl lg:text-6xl font-bold mb-4 lg:mb-6">
-              BUILD IT:PC
+              SIMS
             </h1>
             <p className="text-lg lg:text-2xl mb-6 lg:mb-8 max-w-3xl mx-auto">
               The ultimate platform for building your perfect PC. 
@@ -233,7 +233,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
       <section className="py-12 lg:py-20 bg-white px-4 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12 lg:mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Why Choose BUILD IT:PC?</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Why Choose SIMS?</h2>
             <p className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto">
               We make PC building simple, reliable, and enjoyable. 
               Our platform ensures you get the perfect build every time.
@@ -483,7 +483,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>
             </div>
             <p className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto">
-              Got questions about BUILD IT:PC? We've got answers. 
+              Got questions about SIMS? We've got answers. 
               Find everything you need to know about our platform and PC building.
             </p>
           </div>
@@ -519,7 +519,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
           <div className="mb-8">
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Help Us Improve</h2>
             <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto">
-              Your feedback helps us make BUILD IT:PC better for everyone. 
+              Your feedback helps us make SIMS better for everyone. 
               Share your thoughts, report issues, or suggest new features.
             </p>
           </div>
@@ -574,7 +574,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
                   {/* Rating */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      How would you rate your experience with BUILD IT:PC?
+                      How would you rate your experience with SIMS?
                     </label>
                     <div className="flex justify-center gap-2">
                       {[1, 2, 3, 4, 5].map((rating) => (
@@ -662,7 +662,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
                     <h4 className="text-lg font-semibold text-green-800">Thank You!</h4>
                   </div>
                   <p className="text-green-700">
-                    Your feedback has been submitted successfully. We appreciate your input and will use it to improve BUILD IT:PC!
+                    Your feedback has been submitted successfully. We appreciate your input and will use it to improve SIMS!
                   </p>
                 </div>
               )}
@@ -679,7 +679,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
             {/* Company Info */}
             <div className="lg:col-span-1">
               <div className="mb-6">
-                <h3 className="text-2xl lg:text-3xl font-bold text-green-400 mb-2">BUILD IT:PC</h3>
+                <h3 className="text-2xl lg:text-3xl font-bold text-green-400 mb-2">SIMS</h3>
                 <p className="text-gray-300 text-sm lg:text-base leading-relaxed">
                   The ultimate platform for building your perfect PC. Check compatibility, 
                   compare prices, and create your dream build with confidence.
@@ -782,7 +782,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
           <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-gray-400 text-sm">
-                © 2024 BUILD IT:PC. All rights reserved.
+                © 2024 SIMS. All rights reserved.
               </p>
               <div className="flex space-x-6 mt-4 md:mt-0">
                 <button className="text-gray-400 hover:text-white transition-colors text-sm">

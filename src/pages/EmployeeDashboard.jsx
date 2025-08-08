@@ -582,7 +582,7 @@ const EmployeeDashboard = ({ initialTab, user, setUser }) => {
         return <InventoryTab />
       case 'orders-management':
         return <OrdersTab />
-      case 'chat-support':
+      case 'admin-chat-support':
         if (user.can_access_chat_support === 0 || user.can_access_chat_support === '0' || user.can_access_chat_support === false || user.can_access_chat_support === 'false') {
           return (
             <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 px-6 py-4 rounded-xl text-center max-w-lg mx-auto mt-24">
@@ -678,6 +678,23 @@ const EmployeeDashboard = ({ initialTab, user, setUser }) => {
           <p className="text-lg">Your access to Inventory Management has been disabled by a Super Admin. If you believe this is a mistake, please contact your administrator.</p>
         </div>
       </div>
+    );
+  }
+
+  // Special handling for chat support to render without padding wrapper
+  if (activeTab === 'admin-chat-support') {
+    return (
+      <>
+        {renderContent()}
+        {/* Notification Toast */}
+        {latestUnread && showToast && (
+          <NotificationToast
+            notification={latestUnread}
+            onClose={() => setShowToast(false)}
+            onMarkAsRead={() => markAsRead(latestUnread.id)}
+          />
+        )}
+      </>
     );
   }
 

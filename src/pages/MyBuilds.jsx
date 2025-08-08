@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Eye, Share2, Download, Calendar, DollarSign, CheckCircle, AlertCircle, Clock, Package } from 'lucide-react';
+import { Plus, Trash2, Edit, Eye, Share2, Download, Calendar, DollarSign, CheckCircle, AlertCircle, Clock, Package, Globe, Lock } from 'lucide-react';
 
 // Helper function to check if JWT token is expired
 function isTokenExpired(token) {
@@ -18,6 +18,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
   const [selectedBuild, setSelectedBuild] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [buildToDelete, setBuildToDelete] = useState(null);
+  const [togglingPublic, setTogglingPublic] = useState(null);
 
   // Load builds from backend
   useEffect(() => {
@@ -84,6 +85,34 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
     } catch (error) {
       console.error('Error deleting build:', error);
       alert('Error deleting build. Please try again.');
+    }
+  };
+
+  const handleTogglePublic = async (buildId) => {
+    setTogglingPublic(buildId);
+    try {
+      const response = await fetch(`/backend/api/index.php?endpoint=builds&public=1&id=${buildId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const result = await response.json();
+      if (result.success) {
+        setBuilds(prev => prev.map(build => 
+          build.id === buildId 
+            ? { ...build, isPublic: result.is_public }
+            : build
+        ));
+        alert(result.message);
+      } else {
+        alert('Error updating build visibility: ' + (result.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating build visibility:', error);
+      alert('Error updating build visibility. Please try again.');
+    } finally {
+      setTogglingPublic(null);
     }
   };
 
@@ -226,6 +255,24 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
             
             <div className="flex items-center gap-2">
               <button 
+                onClick={() => handleTogglePublic(build.id)}
+                disabled={togglingPublic === build.id}
+                className={`p-2 rounded-lg transition-colors ${
+                  build.isPublic 
+                    ? 'text-green-600 hover:text-green-700 hover:bg-green-50' 
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+                title={build.isPublic ? 'Make Private' : 'Make Public'}
+              >
+                {togglingPublic === build.id ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                ) : build.isPublic ? (
+                  <Globe className="w-4 h-4" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+              </button>
+              <button 
                 onClick={() => handleEditBuild(build)}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
               >
@@ -241,11 +288,20 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
           </div>
           
           <div className="flex items-center justify-between mb-4">
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${compatibility.bgColor}`}>
-              {compatibility.icon}
-              <span className={`text-sm font-medium ${compatibility.color}`}>
-                {build.compatibility}% Compatible
-              </span>
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${compatibility.bgColor}`}>
+                {compatibility.icon}
+                <span className={`text-sm font-medium ${compatibility.color}`}>
+                  {build.compatibility}% Compatible
+                </span>
+              </div>
+              
+              {build.isPublic && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                  <Globe className="w-3 h-3" />
+                  Public
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -281,6 +337,29 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
               <Edit className="w-4 h-4" />
               Edit Build
             </button>
+            <button 
+              onClick={() => handleTogglePublic(build.id)}
+              disabled={togglingPublic === build.id}
+              className={`flex-1 border-2 py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                build.isPublic 
+                  ? 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {togglingPublic === build.id ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+              ) : build.isPublic ? (
+                <>
+                  <Globe className="w-4 h-4" />
+                  Shared
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -311,12 +390,20 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
             <p className="text-gray-600">Manage and organize your saved PC configurations</p>
           </div>
           
-          {builds.length > 0 && (
-            <button className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
-            onClick={() => setCurrentPage('pc-assembly')}>
-              <Plus className="w-5 h-5" /> New Build
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setCurrentPage('public-builds')}
+              className="border-2 border-gray-300 text-gray-700 px-5 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center gap-2"
+            >
+              <Share2 className="w-5 h-5" /> Browse Community
             </button>
-          )}
+            {builds.length > 0 && (
+              <button className="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
+              onClick={() => setCurrentPage('pc-assembly')}>
+                <Plus className="w-5 h-5" /> New Build
+              </button>
+            )}
+          </div>
         </div>
         
         {builds.length > 0 && (

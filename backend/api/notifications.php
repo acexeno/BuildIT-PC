@@ -1,5 +1,5 @@
 <?php
-// Notifications API endpoints for BUILD IT:PC
+// Notifications API endpoints for SIMS
 
 // Helper: Generate persistent stock notifications for all relevant users
 function generateStockNotifications($pdo) {
@@ -76,7 +76,7 @@ function handleGetNotifications($pdo) {
         foreach ($notifications as &$notification) {
             $notification['read'] = (bool)$notification['is_read'];
             unset($notification['is_read']);
-            $notification['timestamp'] = new DateTime($notification['timestamp']);
+            $notification['timestamp'] = (new DateTime($notification['timestamp']))->format('c');
         }
 
         echo json_encode(['success' => true, 'data' => $notifications]);

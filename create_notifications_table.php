@@ -34,7 +34,7 @@ try {
         $notifications = [
             [
                 'type' => 'system',
-                'title' => 'Welcome to BUILD IT:PC!',
+                'title' => 'Welcome to SIMS!',
                 'message' => 'Thank you for joining our platform. Start building your dream PC today!',
                 'priority' => 'low',
                 'read_status' => 1

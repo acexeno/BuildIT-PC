@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/cors.php';
-// main API router for BUILD IT:PC
+// main API router for SIMS
 
 // all other requests will continue from here
 
@@ -248,6 +248,9 @@ switch ($endpoint) {
                         http_response_code(400);
                         echo json_encode(['error' => 'Invalid test parameter']);
                     }
+                } else if (isset($_GET['public'])) {
+                    // error_log("BUILDS: Calling handleGetPublicBuilds");
+                    handleGetPublicBuilds($pdo);
                 } else {
                     // error_log("BUILDS: Calling handleGetBuilds");
                     handleGetBuilds($pdo);
@@ -313,14 +316,7 @@ switch ($endpoint) {
 
     case 'update_chat_support_access':
         if ($method === 'PUT') {
-            $data = json_decode(file_get_contents('php://input'), true);
-            $user_id = $data['user_id'];
-            $can_access_chat_support = $data['can_access_chat_support'];
-            // TODO: Add authentication/authorization checks as needed
-            $stmt = $pdo->prepare("UPDATE users SET can_access_chat_support = ? WHERE id = ?");
-            $success = $stmt->execute([$can_access_chat_support, $user_id]);
-            echo json_encode(['success' => $success]);
-            exit;
+            handleUpdateChatSupportAccess($pdo);
         } else {
             http_response_code(405);
             echo json_encode(['error' => 'Method Not Allowed']);

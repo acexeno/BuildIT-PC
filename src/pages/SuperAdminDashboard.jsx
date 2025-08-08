@@ -933,48 +933,106 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user }) => {
         {/* Admins Table */}
         <div>
           <h3 className="text-xl font-bold text-purple-700 mb-2">Admin Accounts</h3>
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto mb-6">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="bg-white rounded-xl shadow-sm border">
+            <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="hidden 2xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Inventory</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Orders</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Chat</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {admins.length > 0 ? admins.map((user) => (
                   <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center ring-2 ring-white">
-                          <span className="text-sm font-medium text-gray-700">{user.username.split(' ').map(n => n[0]).join('')}</span>
+                        <div className="w-8 h-8 lg:w-9 lg:h-9 bg-gray-200 rounded-full flex items-center justify-center ring-2 ring-white">
+                          <span className="text-xs lg:text-sm font-medium text-gray-700">{user.username.split(' ').map(n => n[0]).join('')}</span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-bold text-gray-900">{user.username}</div>
+                        <div className="ml-3 lg:ml-4">
+                          <div className="text-xs lg:text-sm font-bold text-gray-900">{user.username}</div>
                           <div className="text-xs text-gray-500">{user.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Admin</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                         <span className={`h-2 w-2 mr-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                         {user.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.last_login}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button className="text-gray-500 hover:text-blue-700 p-1 rounded-full hover:bg-gray-100"><Eye className="h-4 w-4" /></button>
-                      <button className="text-gray-500 hover:text-green-700 p-1 rounded-full hover:bg-gray-100"><Edit className="h-4 w-4" /></button>
-                      <button className="text-gray-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-100"><Trash2 className="h-4 w-4" /></button>
+                    <td className="hidden 2xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">{user.last_login}</td>
+                    <td className="hidden xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-center">
+                      {user.can_access_inventory ? (
+                        <button
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 font-semibold text-xs"
+                          onClick={() => handleToggleInventoryAccess(user.id, true)}
+                        >
+                          Disable
+                        </button>
+                      ) : (
+                        <button
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-semibold text-xs"
+                          onClick={() => handleToggleInventoryAccess(user.id, false)}
+                        >
+                          Enable
+                        </button>
+                      )}
+                    </td>
+                    <td className="hidden xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-center">
+                      {user.can_access_orders ? (
+                        <button
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 font-semibold text-xs"
+                          onClick={() => handleToggleOrderAccess(user.id, true)}
+                        >
+                          Disable
+                        </button>
+                      ) : (
+                        <button
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-semibold text-xs"
+                          onClick={() => handleToggleOrderAccess(user.id, false)}
+                        >
+                          Enable
+                        </button>
+                      )}
+                    </td>
+                    <td className="hidden xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-center">
+                      {user.can_access_chat_support ? (
+                        <button
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 font-semibold text-xs"
+                          onClick={() => handleToggleChatSupportAccess(user.id, true)}
+                        >
+                          Disable
+                        </button>
+                      ) : (
+                        <button
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-semibold text-xs"
+                          onClick={() => handleToggleChatSupportAccess(user.id, false)}
+                        >
+                          Enable
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap text-sm font-medium space-x-1 lg:space-x-2">
+                      <button className="text-gray-500 hover:text-blue-700 p-1 rounded-full hover:bg-gray-100"><Eye className="h-3 w-3 lg:h-4 lg:w-4" /></button>
+                      <button className="text-gray-500 hover:text-green-700 p-1 rounded-full hover:bg-gray-100"><Edit className="h-3 w-3 lg:h-4 lg:w-4" /></button>
+                      <button className="text-gray-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-100"><Trash2 className="h-3 w-3 lg:h-4 lg:w-4" /></button>
                     </td>
                   </tr>
-                )) : <tr><td colSpan="5" className="text-center py-4">No admin data available.</td></tr>}
+                )) : (
+                  <tr>
+                    <td colSpan="8" className="px-2 lg:px-4 py-4 text-center text-gray-500">No admin accounts found.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -982,102 +1040,106 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user }) => {
         {/* Employees Table */}
         <div>
           <h3 className="text-xl font-bold text-blue-700 mb-2">Employee Accounts</h3>
-          <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="bg-white rounded-xl shadow-sm border">
+            <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Inventory Access</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Order Management Access</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Chat Support Access</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="hidden 2xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Inventory</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Orders</th>
+                  <th className="hidden xl:table-cell px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Chat</th>
+                  <th className="px-2 lg:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {employees.length > 0 ? employees.map((user) => (
                   <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center ring-2 ring-white">
-                          <span className="text-sm font-medium text-gray-700">{user.username.split(' ').map(n => n[0]).join('')}</span>
+                        <div className="w-8 h-8 lg:w-9 lg:h-9 bg-gray-200 rounded-full flex items-center justify-center ring-2 ring-white">
+                          <span className="text-xs lg:text-sm font-medium text-gray-700">{user.username.split(' ').map(n => n[0]).join('')}</span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-bold text-gray-900">{user.username}</div>
+                        <div className="ml-3 lg:ml-4">
+                          <div className="text-xs lg:text-sm font-bold text-gray-900">{user.username}</div>
                           <div className="text-xs text-gray-500">{user.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Employee</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                         <span className={`h-2 w-2 mr-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-gray-500'}`}></span>
                         {user.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.last_login}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="hidden 2xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-xs lg:text-sm text-gray-500">{user.last_login}</td>
+                    <td className="hidden xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-center">
                       {user.can_access_inventory ? (
                         <button
-                          className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 font-semibold"
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 font-semibold text-xs"
                           onClick={() => handleToggleInventoryAccess(user.id, true)}
                         >
                           Disable
                         </button>
                       ) : (
                         <button
-                          className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 font-semibold"
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-semibold text-xs"
                           onClick={() => handleToggleInventoryAccess(user.id, false)}
                         >
                           Enable
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="hidden xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-center">
                       {user.can_access_orders ? (
                         <button
-                          className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 font-semibold"
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 font-semibold text-xs"
                           onClick={() => handleToggleOrderAccess(user.id, true)}
                         >
                           Disable
                         </button>
                       ) : (
                         <button
-                          className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 font-semibold"
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-semibold text-xs"
                           onClick={() => handleToggleOrderAccess(user.id, false)}
                         >
                           Enable
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="hidden xl:table-cell px-2 lg:px-4 py-4 whitespace-nowrap text-center">
                       {user.can_access_chat_support ? (
                         <button
-                          className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 font-semibold"
+                          className="bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 font-semibold text-xs"
                           onClick={() => handleToggleChatSupportAccess(user.id, true)}
                         >
                           Disable
                         </button>
                       ) : (
                         <button
-                          className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 font-semibold"
+                          className="bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 font-semibold text-xs"
                           onClick={() => handleToggleChatSupportAccess(user.id, false)}
                         >
                           Enable
                         </button>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button className="text-gray-500 hover:text-blue-700 p-1 rounded-full hover:bg-gray-100"><Eye className="h-4 w-4" /></button>
-                      <button className="text-gray-500 hover:text-green-700 p-1 rounded-full hover:bg-gray-100"><Edit className="h-4 w-4" /></button>
-                      <button className="text-gray-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-100"><Trash2 className="h-4 w-4" /></button>
+                    <td className="px-2 lg:px-4 py-4 whitespace-nowrap text-sm font-medium space-x-1 lg:space-x-2">
+                      <button className="text-gray-500 hover:text-blue-700 p-1 rounded-full hover:bg-gray-100"><Eye className="h-3 w-3 lg:h-4 lg:w-4" /></button>
+                      <button className="text-gray-500 hover:text-green-700 p-1 rounded-full hover:bg-gray-100"><Edit className="h-3 w-3 lg:h-4 lg:w-4" /></button>
+                      <button className="text-gray-500 hover:text-red-700 p-1 rounded-full hover:bg-gray-100"><Trash2 className="h-3 w-3 lg:h-4 lg:w-4" /></button>
                     </td>
                   </tr>
-                )) : <tr><td colSpan="8" className="text-center py-4">No employee data available.</td></tr>}
+                )) : (
+                  <tr>
+                    <td colSpan="8" className="px-2 lg:px-4 py-4 text-center text-gray-500">No employee accounts found.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -1420,18 +1482,20 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user }) => {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-        <p className="text-gray-600 mt-1">Oversee the entire system, manage users, and monitor store performance.</p>
-      </div>
-      <div className="bg-white rounded-xl shadow-lg border">
-        <div className="p-4 sm:p-6 lg:p-8 border-t">
-          {isLoading ? (
-             <div className="text-center py-12">
-               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
-             </div>
-          ) : renderContent()}
+    <div className="w-full h-full">
+      <div className="p-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
+          <p className="text-gray-600 mt-1">Oversee the entire system, manage users, and monitor store performance.</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg border">
+          <div className="p-4 border-t">
+            {isLoading ? (
+               <div className="text-center py-12">
+                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+               </div>
+            ) : renderContent()}
+          </div>
         </div>
       </div>
     </div>

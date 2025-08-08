@@ -1,5 +1,5 @@
 <?php
-// Builds API for BUILD IT:PC
+// Builds API for SIMS
 
 // Include CORS and database configuration
 require_once __DIR__ . '/../config/cors.php';
@@ -28,12 +28,19 @@ if (basename($_SERVER['SCRIPT_NAME']) === 'builds.php') {
                     http_response_code(400);
                     echo json_encode(['error' => 'Invalid test parameter']);
                 }
+            } else if (isset($_GET['public'])) {
+                // New endpoint for public builds
+                handleGetPublicBuilds($pdo);
             } else {
                 handleGetBuilds($pdo);
             }
             break;
         case 'PUT':
-            handleUpdateBuild($pdo);
+            if (isset($_GET['public'])) {
+                handleTogglePublicBuild($pdo);
+            } else {
+                handleUpdateBuild($pdo);
+            }
             break;
         case 'DELETE':
             handleDeleteBuild($pdo);
@@ -73,18 +80,21 @@ function handleCreateBuild($pdo) {
     try {
         // Insert build into database
         $stmt = $pdo->prepare("
-            INSERT INTO user_builds (user_id, name, description, components, compatibility_score, total_price, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
+            INSERT INTO user_builds (user_id, name, description, components, compatibility_score, total_price, is_public, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         ");
         
         $componentsJson = json_encode($input['components']);
+        $isPublic = isset($input['is_public']) ? ($input['is_public'] ? 1 : 0) : 0;
+        
         $stmt->execute([
             $userId,
             $input['name'],
             $input['description'] ?? '',
             $componentsJson,
             $input['compatibility'] ?? 0,
-            $input['totalPrice'] ?? 0
+            $input['totalPrice'] ?? 0,
+            $isPublic
         ]);
         
         $buildId = $pdo->lastInsertId();
@@ -112,7 +122,7 @@ function handleGetBuilds($pdo) {
     
     try {
         $stmt = $pdo->prepare("
-            SELECT id, name, description, components, compatibility_score, total_price, created_at, updated_at
+            SELECT id, name, description, components, compatibility_score, total_price, is_public, created_at, updated_at
             FROM user_builds 
             WHERE user_id = ? 
             ORDER BY created_at DESC
@@ -120,9 +130,14 @@ function handleGetBuilds($pdo) {
         $stmt->execute([$userId]);
         $builds = $stmt->fetchAll();
         
-        // Decode components JSON for each build
+        // Decode components JSON for each build and transform field names
         foreach ($builds as &$build) {
             $build['components'] = json_decode($build['components'], true);
+            // Transform field names to match frontend expectations
+            $build['compatibility'] = $build['compatibility_score'];
+            $build['totalPrice'] = $build['total_price'];
+            $build['createdAt'] = $build['created_at'];
+            $build['updatedAt'] = $build['updated_at'];
         }
         
         echo json_encode([
@@ -133,6 +148,103 @@ function handleGetBuilds($pdo) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to fetch builds: ' . $e->getMessage()]);
+    }
+}
+
+function handleGetPublicBuilds($pdo) {
+    try {
+        // Get public builds with user information
+        $stmt = $pdo->prepare("
+            SELECT 
+                ub.id, 
+                ub.name, 
+                ub.description, 
+                ub.components, 
+                ub.compatibility_score, 
+                ub.total_price, 
+                ub.created_at, 
+                ub.updated_at,
+                u.first_name,
+                u.last_name
+            FROM user_builds ub
+            JOIN users u ON ub.user_id = u.id
+            WHERE ub.is_public = 1 
+            ORDER BY ub.created_at DESC
+        ");
+        $stmt->execute();
+        $builds = $stmt->fetchAll();
+        
+        // Decode components JSON for each build and transform field names
+        foreach ($builds as &$build) {
+            $build['components'] = json_decode($build['components'], true);
+            $build['creator_name'] = $build['first_name'] . ' ' . $build['last_name'];
+            // Transform field names to match frontend expectations
+            $build['compatibility'] = $build['compatibility_score'];
+            $build['totalPrice'] = $build['total_price'];
+            $build['createdAt'] = $build['created_at'];
+            $build['updatedAt'] = $build['updated_at'];
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'data' => $builds
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to fetch public builds: ' . $e->getMessage()]);
+    }
+}
+
+function handleTogglePublicBuild($pdo) {
+    // Get build ID from URL parameter
+    $buildId = $_GET['id'] ?? null;
+    if (!$buildId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Build ID is required']);
+        return;
+    }
+    
+    // Get user ID from JWT token
+    $userId = getUserIdFromToken();
+    if (!$userId) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+        return;
+    }
+    
+    try {
+        // Verify the build belongs to the user
+        $stmt = $pdo->prepare("SELECT id, is_public FROM user_builds WHERE id = ? AND user_id = ?");
+        $stmt->execute([$buildId, $userId]);
+        $build = $stmt->fetch();
+        
+        if (!$build) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Build not found']);
+            return;
+        }
+        
+        // Toggle the public status
+        $newPublicStatus = $build['is_public'] ? 0 : 1;
+        
+        $stmt = $pdo->prepare("
+            UPDATE user_builds 
+            SET is_public = ?, updated_at = NOW()
+            WHERE id = ? AND user_id = ?
+        ");
+        
+        $stmt->execute([$newPublicStatus, $buildId, $userId]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => $newPublicStatus ? 'Build made public successfully' : 'Build made private successfully',
+            'is_public' => $newPublicStatus
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update build visibility: ' . $e->getMessage()]);
     }
 }
 
@@ -175,17 +287,20 @@ function handleUpdateBuild($pdo) {
         // Update the build
         $stmt = $pdo->prepare("
             UPDATE user_builds 
-            SET name = ?, description = ?, components = ?, compatibility_score = ?, total_price = ?, updated_at = NOW()
+            SET name = ?, description = ?, components = ?, compatibility_score = ?, total_price = ?, is_public = ?, updated_at = NOW()
             WHERE id = ? AND user_id = ?
         ");
         
         $componentsJson = json_encode($input['components']);
+        $isPublic = isset($input['is_public']) ? ($input['is_public'] ? 1 : 0) : 0;
+        
         $stmt->execute([
             $input['name'],
             $input['description'] ?? '',
             $componentsJson,
             $input['compatibility'] ?? 0,
             $input['totalPrice'] ?? 0,
+            $isPublic,
             $buildId,
             $userId
         ]);

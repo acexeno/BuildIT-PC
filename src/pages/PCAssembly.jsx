@@ -64,6 +64,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
   // Build State
   const [buildName, setBuildName] = useState('');
   const [buildDescription, setBuildDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [savingBuild, setSavingBuild] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingBuildId, setEditingBuildId] = useState(null);
@@ -675,7 +676,8 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
         description: buildDescription,
         components: filteredComponents,
         compatibility: getCompatibilityScore(),
-        totalPrice: getTotalPrice()
+        totalPrice: getTotalPrice(),
+        is_public: isPublic
       };
       
       const method = isEditing ? 'PUT' : 'POST';
@@ -1575,6 +1577,38 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {buildDescription.length}/200 characters
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Build Visibility
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${isPublic ? 'text-green-600' : 'text-gray-500'}`}>
+                      {isPublic ? 'Public' : 'Private'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublic(!isPublic)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        isPublic ? 'bg-green-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          isPublic ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {isPublic 
+                    ? 'Your build will be visible to other users in the Community Builds section. You can change this later.'
+                    : 'Your build will be private and only visible to you. You can make it public later.'
+                  }
                 </p>
               </div>
 

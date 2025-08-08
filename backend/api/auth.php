@@ -481,4 +481,54 @@ function handleUpdateOrderAccess($pdo) {
         'can_access_orders' => isset($updated['can_access_orders']) ? (int)$updated['can_access_orders'] : null
     ]);
 }
+
+function handleUpdateChatSupportAccess($pdo) {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+    if (!$authHeader) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Authorization header missing']);
+        return;
+    }
+    $token = str_replace('Bearer ', '', $authHeader);
+    $decoded = verifyJWT($token);
+    if (!$decoded || !isset($decoded['user_id'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Invalid token']);
+        return;
+    }
+    $roles = $decoded['roles'] ?? [];
+    if (is_string($roles)) $roles = explode(',', $roles);
+    if (!in_array('Super Admin', $roles)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Forbidden']);
+        return;
+    }
+    $input = json_decode(file_get_contents('php://input'), true);
+    $userId = $input['user_id'] ?? null;
+    $canAccess = isset($input['can_access_chat_support']) ? (int)$input['can_access_chat_support'] : null;
+    if (!$userId || !in_array($canAccess, [0, 1], true)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid input']);
+        return;
+    }
+
+    // Update and check affected rows
+    $stmt = $pdo->prepare("UPDATE users SET can_access_chat_support = ? WHERE id = ?");
+    $stmt->execute([$canAccess, $userId]);
+    if ($stmt->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'User not found or value not changed']);
+        return;
+    }
+
+    // Fetch and return the updated value for confirmation
+    $stmt = $pdo->prepare("SELECT can_access_chat_support FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $updated = $stmt->fetch();
+    echo json_encode([
+        'success' => true,
+        'can_access_chat_support' => isset($updated['can_access_chat_support']) ? (int)$updated['can_access_chat_support'] : null
+    ]);
+}
 ?> 

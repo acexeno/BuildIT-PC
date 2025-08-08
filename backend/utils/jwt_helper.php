@@ -1,5 +1,5 @@
 <?php
-// JWT Helper for BUILD IT:PC Authentication
+// JWT Helper for SIMS Authentication
 // Note: In production, use a proper JWT library like firebase/php-jwt
 
 // JWT Secret Key (in production, use a strong, unique secret)

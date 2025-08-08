@@ -1,7 +1,7 @@
 # Computer Component Images Guide
 
 ## Overview
-This guide provides real computer component images for the BUILD IT:PC application, organized by component category with proper image sources and implementation details.
+This guide provides real computer component images for the SIMS application, organized by component category with proper image sources and implementation details.
 
 ## Image Sources
 All images are sourced from:
