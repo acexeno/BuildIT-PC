@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Monitor, Bell, Cpu, BarChart3, Users, Package, Wrench, FileText, TrendingUp, MessageSquare, Menu, X } from 'lucide-react';
+import { Settings, Monitor, Bell, Cpu, BarChart3, Users, Package, Wrench, FileText, TrendingUp, MessageSquare, Menu, X, Lock } from 'lucide-react';
 
 const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabChange, activeSuperAdminTab, notificationsCount }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -24,6 +24,48 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
     if (user.roles.includes('Admin')) return 'bg-purple-500';
     if (user.roles.includes('Employee')) return 'bg-blue-500';
     return 'bg-green-500';
+  };
+
+  // Admin navigation with permission locks
+  const adminTabs = [
+    { id: 'dashboard', name: 'Dashboard', icon: <BarChart3 className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'notifications', name: 'Notifications', icon: <Bell className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'sales-reports', name: 'Sales Reports', icon: <TrendingUp className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'system-reports', name: 'System Reports', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'inventory', name: 'Inventory', icon: <Package className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'orders-management', name: 'Orders Management', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'prebuilt-management', name: 'Prebuilt Management', icon: <Monitor className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'admin-chat-support', name: 'Chat Support', icon: <MessageSquare className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> }
+  ];
+
+  const adminTabsWithLocks = adminTabs.map(tab => {
+    let isDisabled = false;
+    if (tab.id === 'inventory') {
+      isDisabled = Number(user?.can_access_inventory) !== 1;
+    } else if (tab.id === 'orders-management') {
+      isDisabled = Number(user?.can_access_orders) !== 1;
+    } else if (tab.id === 'admin-chat-support') {
+      isDisabled = Number(user?.can_access_chat_support) !== 1;
+    }
+    return { ...tab, isDisabled };
+  });
+
+  const handleAdminNavigation = (tabId, isDisabled) => {
+    if (isDisabled) {
+      let message = '';
+      if (tabId === 'inventory') message = 'Your access to Inventory Management has been disabled by a Super Admin.';
+      else if (tabId === 'orders-management') message = 'Your access to Orders Management has been disabled by a Super Admin.';
+      else if (tabId === 'admin-chat-support') message = 'Your access to Chat Support has been disabled by a Super Admin.';
+      alert(message);
+      return;
+    }
+    if (tabId === 'dashboard') {
+      onPageChange('admin-dashboard');
+    } else {
+      onPageChange(tabId);
+    }
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -159,35 +201,25 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   Admin
                 </h3>
               </div>
-              {[
-                { id: 'dashboard', name: 'Dashboard', icon: <BarChart3 className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'notifications', name: 'Notifications', icon: <Bell className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'sales-reports', name: 'Sales Reports', icon: <TrendingUp className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'system-reports', name: 'System Reports', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'inventory', name: 'Inventory', icon: <Package className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'orders-management', name: 'Orders Management', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'prebuilt-management', name: 'Prebuilt Management', icon: <Monitor className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'admin-chat-support', name: 'Chat Support', icon: <MessageSquare className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> }
-              ].map(tab => (
+              {adminTabsWithLocks.map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    if (tab.id === 'dashboard') {
-                      onPageChange('admin-dashboard');
-                    } else {
-                      onPageChange(tab.id);
-                    }
-                    setIsMobileMenuOpen(false);
-                  }}
+                  onClick={() => handleAdminNavigation(tab.id, tab.isDisabled)}
+                  disabled={tab.isDisabled}
                   className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors truncate ${
                     (tab.id === 'dashboard' && currentPage === 'admin-dashboard') || currentPage === tab.id
                       ? 'bg-purple-100 text-purple-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      : tab.isDisabled
+                        ? 'text-gray-400 cursor-not-allowed opacity-60 bg-gray-50 border border-gray-200'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
+                  title={tab.isDisabled ? 'Access disabled by Super Admin' : ''}
                 >
                   {tab.icon}
-                  {tab.name}
+                  <span className="flex-1 text-left">{tab.name}</span>
+                  {tab.isDisabled && (
+                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
+                  )}
                   {tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
                     <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                       {notificationsCount}
