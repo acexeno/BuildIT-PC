@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     profile_image VARCHAR(500),
     last_login DATETIME,
     can_access_inventory TINYINT(1) NOT NULL DEFAULT 1,
+    -- Added for granular permission toggles
+    can_access_orders TINYINT(1) NOT NULL DEFAULT 1,
+    can_access_chat_support TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

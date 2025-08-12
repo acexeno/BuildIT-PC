@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/cors.php';
+require_once __DIR__ . '/../utils/jwt_helper.php';
 
 $pdo = get_db_connection();
 header('Content-Type: application/json');
@@ -9,6 +10,71 @@ function respond($data, $code = 200) {
     http_response_code($code);
     echo json_encode($data);
     exit;
+}
+
+// Get user from token if provided
+function getUserFromToken() {
+    $headers = getallheaders();
+    $token = null;
+    
+    // Support different header casings
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+    if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+        $token = $matches[1];
+    }
+    
+    if (!$token && isset($_GET['token'])) {
+        $token = $_GET['token'];
+    }
+    
+    if ($token) {
+        // Use the correct helper function name
+        return verifyJWT($token);
+    }
+    
+    return null;
+}
+
+// Check if user has permission for chat support
+function hasChatPermission($user, $requiredLevel = 'read') {
+    if (!$user || !isset($user['roles'])) {
+        return false;
+    }
+
+    $roles = is_string($user['roles']) ? explode(',', $user['roles']) : $user['roles'];
+
+    // Super Admin can always access
+    if (in_array('Super Admin', $roles, true)) {
+        return true;
+    }
+
+    // Enforce per-user chat permission flag from DB for Admin/Employee
+    global $pdo;
+    try {
+        if (isset($user['user_id'])) {
+            $stmt = $pdo->prepare('SELECT can_access_chat_support FROM users WHERE id = ?');
+            $stmt->execute([$user['user_id']]);
+            $row = $stmt->fetch();
+            if ($row && (int)$row['can_access_chat_support'] !== 1) {
+                return false; // Explicitly disabled by Super Admin
+            }
+        }
+    } catch (Exception $e) {
+        // If DB check fails, be safe and deny access
+        return false;
+    }
+
+    // Role-based defaults
+    if (in_array('Admin', $roles, true)) {
+        return true; // Admins allowed unless explicitly disabled above
+    }
+
+    // Employee can read and write chat unless explicitly disabled above
+    if (in_array('Employee', $roles, true) && in_array($requiredLevel, ['read', 'write'], true)) {
+        return true;
+    }
+
+    return false;
 }
 
 function getUnreadCount($userId) {
@@ -56,20 +122,31 @@ if ($method === 'GET' && isset($_GET['stats'])) {
     }
 }
 
-// List all chat sessions (admin) with enhanced data
+// List all chat sessions (admin/employee only) with enhanced data
 if ($method === 'GET' && isset($_GET['sessions'])) {
     try {
+        $user = getUserFromToken();
+        
+        // Only admins and employees can access all sessions
+        if (!hasChatPermission($user, 'read')) {
+            respond(['error' => 'Access denied. Admin or Employee role required.'], 403);
+        }
+        
         $stmt = $pdo->query('
             SELECT 
                 cs.*, 
                 u.username,
                 u.email as user_email,
+                u.first_name,
+                u.last_name,
+                u.is_active,
                 (SELECT COUNT(*) FROM chat_messages WHERE session_id = cs.id AND sender = "user" AND read_status = "unread") as unread_messages,
                 (SELECT MAX(sent_at) FROM chat_messages WHERE session_id = cs.id) as last_message_time
             FROM chat_sessions cs 
             LEFT JOIN users u ON cs.user_id = u.id 
             ORDER BY 
                 CASE WHEN cs.status = "open" THEN 0 ELSE 1 END,
+                CASE WHEN cs.priority = "urgent" THEN 0 WHEN cs.priority = "high" THEN 1 WHEN cs.priority = "normal" THEN 2 ELSE 3 END,
                 cs.updated_at DESC
         ');
         $sessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -169,6 +246,14 @@ if ($method === 'POST' && isset($_GET['send'])) {
 
         if (!$sender || !$message) {
             respond(['error' => 'Invalid input: sender and message required'], 400);
+        }
+
+        // Validate sender type and check permissions
+        $currentUser = getUserFromToken();
+        if ($sender === 'admin') {
+            if (!hasChatPermission($currentUser, 'write')) {
+                respond(['error' => 'Access denied. Admin or Employee role required to send admin messages.'], 403);
+            }
         }
 
         // Validate message type
@@ -414,6 +499,53 @@ if ($method === 'GET' && isset($_GET['unread_count'])) {
         
     } catch (Exception $e) {
         respond(['error' => 'Failed to get unread count: ' . $e->getMessage()], 500);
+    }
+}
+
+// Check user chat permissions
+if ($method === 'GET' && isset($_GET['check_permissions'])) {
+    try {
+        $user = getUserFromToken();
+        
+        if (!$user) {
+            respond(['success' => true, 'hasPermission' => false, 'canRead' => false, 'canWrite' => false]);
+        }
+        
+        $hasRead = hasChatPermission($user, 'read');
+        $hasWrite = hasChatPermission($user, 'write');
+        
+        respond([
+            'success' => true, 
+            'hasPermission' => $hasRead || $hasWrite,
+            'canRead' => $hasRead,
+            'canWrite' => $hasWrite,
+            'user' => $user
+        ]);
+        
+    } catch (Exception $e) {
+        respond(['error' => 'Failed to check permissions: ' . $e->getMessage()], 500);
+    }
+}
+
+// Get online support agents count
+if ($method === 'GET' && isset($_GET['support_agents'])) {
+    try {
+        // Count active admins and employees who can access chat
+        $stmt = $pdo->query("
+            SELECT COUNT(DISTINCT u.id) as agent_count
+            FROM users u 
+            JOIN user_roles ur ON u.id = ur.user_id 
+            JOIN roles r ON ur.role_id = r.id 
+            WHERE r.name IN ('Admin', 'Employee') 
+            AND u.is_active = 1
+            AND u.last_login > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+        ");
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        respond(['success' => true, 'online_agents' => $result['agent_count'] ?? 0]);
+        
+    } catch (Exception $e) {
+        respond(['error' => 'Failed to get agent count: ' . $e->getMessage()], 500);
     }
 }
 
