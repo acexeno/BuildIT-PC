@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowRight, Star, CheckCircle, Zap, Shield, Users, Award, ChevronDown, ChevronUp, HelpCircle, MessageSquare, Send, X, Cpu, Monitor, MemoryStick } from 'lucide-react'
+import HeroSlideshow from '../components/HeroSlideshow'
+import { API_BASE } from '../utils/apiBase'
 
 const Home = ({ setCurrentPage, setSelectedComponents }) => {
   const [openFaq, setOpenFaq] = useState(null)
@@ -15,7 +17,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
   useEffect(() => {
     const fetchPrebuilts = async () => {
       try {
-        const response = await fetch('/backend/api/prebuilts.php')
+        const response = await fetch(`${API_BASE}/prebuilts.php`)
         const data = await response.json()
         if (Array.isArray(data)) {
           setPrebuiltPCs(data)
@@ -37,7 +39,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
     if (!componentIds || typeof componentIds !== 'object') return {};
     const ids = Object.values(componentIds).filter(id => id && typeof id === 'number');
     if (ids.length === 0) return {};
-    const url = `/backend/api/get_components_by_ids.php?ids=${ids.join(',')}`;
+    const url = `${API_BASE}/get_components_by_ids.php?ids=${ids.join(',')}`;
     const response = await fetch(url);
     const data = await response.json();
     if (data.success && data.data) {
@@ -199,35 +201,8 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-600 to-green-800 text-white py-12 lg:py-20 px-4 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <h1 className="text-4xl lg:text-6xl font-bold mb-4 lg:mb-6">
-              SIMS
-            </h1>
-            <p className="text-lg lg:text-2xl mb-6 lg:mb-8 max-w-3xl mx-auto">
-              The ultimate platform for building your perfect PC. 
-              Check compatibility, compare prices, and create your dream build.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-6">
-              <button 
-                onClick={() => setCurrentPage('pc-assembly')}
-                className="bg-white text-green-600 px-6 lg:px-8 py-3 lg:py-4 rounded-lg font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors flex items-center justify-center gap-3"
-              >
-                Start Building
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => setCurrentPage('prebuilt-pcs')}
-                className="border-2 border-white text-white px-6 lg:px-8 py-3 lg:py-4 rounded-lg font-semibold text-base lg:text-lg hover:bg-white hover:text-green-600 transition-colors"
-              >
-                View Prebuilts
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Slideshow */}
+      <HeroSlideshow setCurrentPage={setCurrentPage} />
 
       {/* Why Choose Us */}
       <section className="py-12 lg:py-20 bg-white px-4 lg:px-8">
@@ -281,14 +256,7 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
                   onClick={() => handlePrebuiltSelect(pc)}
                   className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105 hover:border-green-300"
                 >
-                  {/* Image */}
-                  <div className="relative">
-                    <img
-                      src={pc.image}
-                      alt={pc.name}
-                      className="w-full h-48 object-cover"
-                    />
-                  </div>
+
                   {/* Content */}
                   <div className="p-6">
                                       {/* Header */}
@@ -541,13 +509,21 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
             Join thousands of users who have successfully built their perfect PC 
             using our platform. Start your build today!
           </p>
-          <button 
-            onClick={() => setCurrentPage('pc-assembly')}
-            className="bg-white text-green-600 px-6 lg:px-8 py-3 lg:py-4 rounded-lg font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors flex items-center gap-3 mx-auto"
-          >
-            Get Started Now
-            <ArrowRight className="w-5 h-5" />
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              onClick={() => setCurrentPage('pc-assembly')}
+              className="bg-white text-green-600 px-6 lg:px-8 py-3 lg:py-4 rounded-lg font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors flex items-center gap-3"
+            >
+              Get Started Now
+              <ArrowRight className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setCurrentPage('scroll-test')}
+              className="bg-red-500 text-white px-6 lg:px-8 py-3 lg:py-4 rounded-lg font-semibold text-base lg:text-lg hover:bg-red-600 transition-colors flex items-center gap-3"
+            >
+              Test Scroll Bar
+            </button>
+          </div>
         </div>
       </section>
 
@@ -803,4 +779,4 @@ const Home = ({ setCurrentPage, setSelectedComponents }) => {
   )
 }
 
-export default Home 
+export default Home

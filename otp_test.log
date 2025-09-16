@@ -1,0 +1,16 @@
+[04-Sep-2025 19:06:26 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 091860, Token: dd234039e0334f1fd99bda59dfd52d39
+[04-Sep-2025 19:06:26 Asia/Manila] OTP Record Found: Yes
+[04-Sep-2025 19:06:26 Asia/Manila] OTP Record Details: Array
+(
+    [id] => 5
+    [email] => test@example.com
+    [otp] => 091860
+    [token] => dd234039e0334f1fd99bda59dfd52d39
+    [expires_at] => 2025-09-04 19:06:36
+    [is_used] => 0
+    [ip_address] => 127.0.0.1
+    [user_agent] => Test User Agent
+    [created_at] => 2025-09-04 19:06:26
+    [updated_at] => 2025-09-04 19:06:26
+)
+

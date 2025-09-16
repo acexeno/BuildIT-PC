@@ -41,6 +41,46 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  /* Slideshow animations */
+  .animate-fade-in {
+    animation: fadeIn 1s ease-in-out;
+  }
+
+  .animate-fade-in-delay {
+    animation: fadeIn 1s ease-in-out 0.3s both;
+  }
+
+  .animate-fade-in-delay-2 {
+    animation: fadeIn 1s ease-in-out 0.6s both;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px);
+    }
+    60% {
+      transform: translateY(-5px);
+    }
+  }
 }
 
 @layer utilities {
@@ -127,4 +167,278 @@
       @apply text-base;
     }
   }
+} 
+
+/* Custom scrollbar styles for chat support */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Firefox scrollbar styles */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af #f1f5f9;
+}
+
+/* Ensure chat container has proper height constraints */
+.chat-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.chat-input-area {
+  flex-shrink: 0;
+}
+
+/* Force scrollbar to always be visible */
+.chat-messages-area::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.chat-messages-area::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+.chat-messages-area::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+/* New chat messages container scrollbar styles */
+.chat-messages-container::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+/* Universal scrollbar enforcement for all chat elements */
+[class*="chat"]::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+[class*="chat"]::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+[class*="chat"]::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+/* Force scrollbar visibility with !important */
+*::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+} 
+
+/* Additional scrollbar enforcement */
+div::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+div::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+div::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+/* Force scrollbar for chat area specifically */
+.chat-area-scroll::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+  background: red !important;
+}
+
+.chat-area-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+.chat-area-scroll::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+} 
+
+/* Enhanced scrollbar styles for better visibility */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+/* Chat messages container */
+.chat-messages-container {
+  overflow-y: auto;
+  height: 100%;
+  padding-right: 8px;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Webkit scrollbar */
+.chat-messages-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 4px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Force scrollbar visibility for all chat-related containers */
+[class*="chat"] {
+  overflow-y: auto !important;
+}
+
+[class*="chat"]::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+/* Ensure proper height constraints for chat containers */
+.chat-messages-container {
+  max-height: 300px !important;
+  min-height: 200px !important;
+  height: 300px !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+/* Mobile responsive scrollbar adjustments */
+@media (max-width: 768px) {
+  .chat-messages-container {
+    max-height: 250px !important;
+    height: 250px !important;
+  }
+  
+  .chat-messages-container::-webkit-scrollbar {
+    width: 6px !important;
+  }
+} 
+
+/* Force scrollbar on overflow-y-scroll */
+.overflow-y-scroll::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+.overflow-y-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+.overflow-y-scroll::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+.overflow-y-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
+}
+
+/* Universal scrollbar enforcement - most aggressive */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #9ca3af #f1f5f9 !important;
+}
+
+*::-webkit-scrollbar {
+  width: 8px !important;
+  display: block !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #9ca3af !important;
+  border-radius: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #6b7280 !important;
 } 

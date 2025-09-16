@@ -1,0 +1,5 @@
+[04-Sep-2025 14:40:45 Europe/Berlin] PHP Fatal error:  Uncaught Error: Call to undefined function env() in C:\xampp\htdocs\capstone2\config\database.php:4
+Stack trace:
+#0 C:\xampp\htdocs\capstone2\test_db_connection_new.php(9): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\capstone2\config\database.php on line 4

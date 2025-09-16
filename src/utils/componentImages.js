@@ -1,6 +1,33 @@
 // Real computer component images mapping
 // Updated to use local images from public/images/components/
 // Component names match exactly with the database
+// NOTE: In production (served from /capstone2/dist/), absolute paths like
+// "/images/..." must be prefixed by Vite's BASE_URL so they resolve to
+// "/capstone2/dist/images/...". We handle that centrally via resolveAssetPath.
+
+const BASE_URL = (import.meta && import.meta.env && import.meta.env.BASE_URL) || '/';
+const resolveAssetPath = (p) => {
+  if (!p) return p;
+  const path = p.startsWith('/') ? p.slice(1) : p;
+  // If base is './' or empty, return a relative path without leading slash
+  if (!BASE_URL || BASE_URL === './') {
+    return path;
+  }
+  // Otherwise, join base (without trailing slash) and normalized path
+  const base = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+  return `${base}/${path}`;
+};
+
+// Deterministic hash for stable fallback image selection (prevents stutter)
+const stableIndexFromString = (str, mod) => {
+  if (!str || mod <= 0) return 0;
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+  }
+  // Ensure positive and within range
+  return Math.abs(h) % mod;
+};
 
 const componentImages = {
   // CPU Images - Exact database names
@@ -8,6 +35,7 @@ const componentImages = {
   "R5 5600G (TRAY) WITH HEATSINK FAN": "/images/components/cpu/r5_5600G_tray.png",
   "R5 5600GT (TRAY) WITH HEATSINK FAN": "/images/components/cpu/R5 5600GT (TRAY) WITH HEATSINK FAN.png",
   "R5 5600X (box) WITH WRAITH STEALTH COOLER": "/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png",
+  "R5 5600X (box) WITH WRAITH STEALTH": "/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png",
   "R5 5600X (TRAY) NO COOLER": "/images/components/cpu/r5_5600x_tray.png",
   "R5 5600X (TRAY) WITH HEATSINK FAN": "/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png",
   "R5 7600X (TRAY) WITH HEATSINK FAN": "/images/components/cpu/R5 7600X (TRAY) WITH HEATSINK FAN.png",
@@ -92,8 +120,6 @@ const componentImages = {
   "MSI B550M PRO-VDH": "/images/components/motherboard/MSI B550M PRO-VDH.png",
   "MSI MAG B550M": "/images/components/motherboard/MSI MAG B550M.png",
   "WHALEKOM B450MV1": "/images/components/motherboard/WHALEKOM B450MV1.png",
-  "WHALEKOM B450MV1 - AMD SF": "/images/components/motherboard/WHALEKOM B450MV1.png",
-  "WHALEKOM B450MV1 - AMD FAN RYZEN": "/images/components/motherboard/WHALEKOM B450MV1.png",
   "H510M HVS": "/images/components/motherboard/ASRock H510M-HVS.png",
   "B550M STEEL LEGEND": "/images/components/motherboard/ASRock B550M STEEL LEGEND.png",
   "A520M K": "/images/components/motherboard/ASUS PRIME A520M K.png",
@@ -186,7 +212,7 @@ const componentImages = {
 const fallbackImages = {
   cpu: [
     "/images/components/cpu/R3 3200G (TRAY) WITH HEATSINK FAN.png",
-    "/images/components/cpu/r5_5600G_tray.png",
+    "/images/components/cpu/R5 5600G (TRAY) WITH HEATSINK FAN.png",
     "/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png",
     "/images/components/cpu/R7 5700X (TRAY) WITH HEATSINK FAN.png",
     "/images/components/cpu/R7 5800X (TRAY) WITH HEATSINK FAN.png",
@@ -292,12 +318,12 @@ export function getComponentImage(component, componentType = null) {
   const componentName = typeof component === 'string' ? component : component.name;
   
   if (!componentName) {
-    return fallbackImages.default[0];
+    return resolveAssetPath(fallbackImages.default[0]);
   }
   
   // First, try to get the exact image for the component name
   if (componentImages[componentName]) {
-    return componentImages[componentName];
+    return resolveAssetPath(componentImages[componentName]);
   }
   
   // Try partial matching for common patterns
@@ -305,110 +331,111 @@ export function getComponentImage(component, componentType = null) {
   
   // CPU matching
   if (lowerName.includes('ryzen')) {
-    if (lowerName.includes('5600x')) return "/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png";
-    if (lowerName.includes('5600g')) return "/images/components/cpu/r5_5600G_tray.png";
-    if (lowerName.includes('5700x')) return "/images/components/cpu/R7 5700X (TRAY) WITH HEATSINK FAN.png";
-    if (lowerName.includes('5800x')) return "/images/components/cpu/R7 5800X (TRAY) WITH HEATSINK FAN.png";
-    if (lowerName.includes('7600x')) return "/images/components/cpu/R5 7600X (TRAY) WITH HEATSINK FAN.png";
-    return fallbackImages.cpu[0];
+    if (lowerName.includes('5600x')) return resolveAssetPath("/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png");
+    if (lowerName.includes('5600g')) return resolveAssetPath("/images/components/cpu/r5_5600G_tray.png");
+    if (lowerName.includes('5700x')) return resolveAssetPath("/images/components/cpu/R7 5700X (TRAY) WITH HEATSINK FAN.png");
+    if (lowerName.includes('5800x')) return resolveAssetPath("/images/components/cpu/R7 5800X (TRAY) WITH HEATSINK FAN.png");
+    if (lowerName.includes('7600x')) return resolveAssetPath("/images/components/cpu/R5 7600X (TRAY) WITH HEATSINK FAN.png");
+    return resolveAssetPath(fallbackImages.cpu[0]);
   }
   
   // GPU matching
   if (lowerName.includes('rtx')) {
-    if (lowerName.includes('3060')) return "/images/components/gpu/GALAX RTX 3060 1-CLICK OC BLK 12GB.png";
-    if (lowerName.includes('4060')) return "/images/components/gpu/GIGABYTE RTX 4060 AERO OC 8GB WHITE.png";
-    if (lowerName.includes('4070')) return "/images/components/gpu/GIGABYTE RTX 4070 SUPER EAGLE OC 12GB.png";
-    return fallbackImages.gpu[0];
+    if (lowerName.includes('3060')) return resolveAssetPath("/images/components/gpu/GALAX RTX 3060 1-CLICK OC BLK 12GB.png");
+    if (lowerName.includes('4060')) return resolveAssetPath("/images/components/gpu/GIGABYTE RTX 4060 AERO OC 8GB WHITE.png");
+    if (lowerName.includes('4070')) return resolveAssetPath("/images/components/gpu/GIGABYTE RTX 4070 SUPER EAGLE OC 12GB.png");
+    return resolveAssetPath(fallbackImages.gpu[0]);
   }
   
   if (lowerName.includes('rx')) {
-    if (lowerName.includes('6600')) return "/images/components/gpu/GIGABYTE RX 6600 8GB EAGLE.png";
-    if (lowerName.includes('7800')) return "/images/components/gpu/SAPPHIRE PULSE AMD RADEON RX 7800 XT 16GB.png";
-    return fallbackImages.gpu[0];
+    if (lowerName.includes('6600')) return resolveAssetPath("/images/components/gpu/GIGABYTE RX 6600 8GB EAGLE.png");
+    if (lowerName.includes('7800')) return resolveAssetPath("/images/components/gpu/SAPPHIRE PULSE AMD RADEON RX 7800 XT 16GB.png");
+    return resolveAssetPath(fallbackImages.gpu[0]);
   }
   
   // RAM matching
   if (lowerName.includes('kingston') && lowerName.includes('fury')) {
-    return "/images/components/ram/KINGSTON FURY BEAST DDR4 8GB.png";
+    return resolveAssetPath("/images/components/ram/KINGSTON FURY BEAST DDR4 8GB.png");
   }
   if (lowerName.includes('tforce') || lowerName.includes('t-force')) {
-    return "/images/components/ram/TFORCE Delta RGB DDR4 16GB kit (2x8gb) BLACK.png";
+    return resolveAssetPath("/images/components/ram/TFORCE Delta RGB DDR4 16GB kit (2x8gb) BLACK.png");
   }
   if (lowerName.includes('team')) {
-    return "/images/components/ram/TEAM ELITE PLUS GOLD DDR4 8GB.png";
+    return resolveAssetPath("/images/components/ram/TEAM ELITE PLUS GOLD DDR4 8GB.png");
   }
   
   // Motherboard matching
   if (lowerName.includes('asrock')) {
-    return "/images/components/motherboard/ASRock B550M STEEL LEGEND.png";
+    return resolveAssetPath("/images/components/motherboard/ASRock B550M STEEL LEGEND.png");
   }
   if (lowerName.includes('msi')) {
-    return "/images/components/motherboard/MSI B550M PRO-VDH.png";
+    return resolveAssetPath("/images/components/motherboard/MSI B550M PRO-VDH.png");
   }
   if (lowerName.includes('asus')) {
-    return "/images/components/motherboard/ASUS PRIME A520M K.png";
+    return resolveAssetPath("/images/components/motherboard/ASUS PRIME A520M K.png");
   }
   if (lowerName.includes('gigabyte')) {
-    return "/images/components/motherboard/GIGABYTE B550M DS3H.png";
+    return resolveAssetPath("/images/components/motherboard/GIGABYTE B550M DS3H.png");
   }
   
   // Storage matching
   if (lowerName.includes('samsung')) {
-    return "/images/components/storage/Samsung 970 EVO Plus 500GB.png";
+    return resolveAssetPath("/images/components/storage/Samsung 970 EVO Plus 500GB.png");
   }
   if (lowerName.includes('wd') || lowerName.includes('western digital')) {
-    return "/images/components/storage/WD Blue SN570 1TB.png";
+    return resolveAssetPath("/images/components/storage/WD Blue SN570 1TB.png");
   }
   if (lowerName.includes('crucial')) {
-    return "/images/components/storage/Crucial P3 1TB-2TB.png";
+    return resolveAssetPath("/images/components/storage/Crucial P3 1TB-2TB.png");
   }
   if (lowerName.includes('seagate')) {
-    return "/images/components/storage/Seagate Barracuda 1TB-2TB HDD.png";
+    return resolveAssetPath("/images/components/storage/Seagate Barracuda 1TB-2TB HDD.png");
   }
   
   // PSU matching
   if (lowerName.includes('corsair')) {
-    return "/images/components/psu/Corsair CX550F.png";
+    return resolveAssetPath("/images/components/psu/Corsair CX550F.png");
   }
   if (lowerName.includes('evga')) {
-    return "/images/components/psu/EVGA 600 BR.png";
+    return resolveAssetPath("/images/components/psu/EVGA 600 BR.png");
   }
   if (lowerName.includes('seasonic')) {
-    return "/images/components/psu/Seasonic Focus GX-650.png";
+    return resolveAssetPath("/images/components/psu/Seasonic Focus GX-650.png");
   }
   if (lowerName.includes('thermaltake')) {
-    return "/images/components/psu/Thermaltake Smart 500W.png";
+    return resolveAssetPath("/images/components/psu/Thermaltake Smart 500W.png");
   }
   
   // Case matching
   if (lowerName.includes('nzxt')) {
-    return "/images/components/case/NZXT H5 FLOW.png";
+    return resolveAssetPath("/images/components/case/NZXT H5 FLOW.png");
   }
   if (lowerName.includes('coolman')) {
-    return "/images/components/case/COOLMAN HARLEY.png";
+    return resolveAssetPath("/images/components/case/COOLMAN HARLEY.png");
   }
   if (lowerName.includes('darkflash')) {
-    return "/images/components/case/DARKFLASH DK351.png";
+    return resolveAssetPath("/images/components/case/DARKFLASH DK351.png");
   }
   if (lowerName.includes('inplay')) {
-    return "/images/components/case/INPLAY WIND 01.png";
+    return resolveAssetPath("/images/components/case/INPLAY WIND 01.png");
   }
   
   // Cooler matching
   if (lowerName.includes('deepcool')) {
-    return "/images/components/cooler/DEEPCOOL AK400.png";
+    return resolveAssetPath("/images/components/cooler/DEEPCOOL AK400.png");
   }
   if (lowerName.includes('jonsbo')) {
-    return "/images/components/cooler/JONSBO CR 1200 EVO (AIR COOLERS).png";
+    return resolveAssetPath("/images/components/cooler/JONSBO CR 1200 EVO (AIR COOLERS).png");
   }
   if (lowerName.includes('thermalright')) {
-    return "/images/components/cooler/THERMALRIGHT LIQUID COOLER FROZEN WARFRAME 240 ARGB.png";
+    return resolveAssetPath("/images/components/cooler/THERMALRIGHT LIQUID COOLER FROZEN WARFRAME 240 ARGB.png");
   }
   
   // If no exact match, determine type from name and use fallback
   const type = componentType || getComponentTypeFromName(componentName);
   const images = fallbackImages[type] || fallbackImages.default;
   
-  // Return a random image from the array
-  return images[Math.floor(Math.random() * images.length)];
-} 
+  // Return a deterministic fallback image (prevents flicker)
+  const idx = stableIndexFromString(componentName, images.length);
+  return resolveAssetPath(images[idx]);
+}

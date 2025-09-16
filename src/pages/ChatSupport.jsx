@@ -1,23 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageSquare, User, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Send, MessageSquare, User, Trash2 } from 'lucide-react';
+import { API_BASE } from '../utils/apiBase';
+const CHAT_BASE = `${API_BASE}/chat.php`;
 
-const API_BASE = '/backend/api/chat.php';
-
-const recommendedQuestions = [
-  'How do I check compatibility?',
-  'Can I save my PC build?',
-  'Are prices up to date?',
-  'How do I place an order?',
-  'What payment methods do you accept?',
-  'Do you offer warranty?',
-  'Can I customize prebuilt PCs?'
-];
-
-const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = false }) => {
-  // Session management
-  const [sessionId, setSessionId] = useState(() => {
-    return localStorage.getItem('builditpc_chat_session_id') || null;
-  });
+const ChatSupport = ({ user, customStyles = {} }) => {
+  // State declarations and hooks
+  const [sessionId, setSessionId] = useState(() => localStorage.getItem('builditpc_chat_session_id') || null);
   const [guestName, setGuestName] = useState(() => localStorage.getItem('builditpc_guest_name') || '');
   const [guestEmail, setGuestEmail] = useState(() => localStorage.getItem('builditpc_guest_email') || '');
   const [messages, setMessages] = useState([]);
@@ -25,42 +13,49 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [sessionStatus, setSessionStatus] = useState('open');
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [lastMessageTime, setLastMessageTime] = useState(null);
+  const [sessionStatus, setSessionStatus] = useState('open');  // 'open' or 'resolved'
   const messagesEndRef = useRef(null);
   const [tempGuestName, setTempGuestName] = useState('');
   const [tempGuestEmail, setTempGuestEmail] = useState('');
+
+  // Update last seen timestamp when chat is opened
+  const updateLastSeen = async () => {
+    if (!user?.id || !sessionId) return;
+    
+    try {
+      await fetch(`${CHAT_BASE}?update_last_seen`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          user_id: user.id,
+          session_id: sessionId
+        })
+      });
+    } catch (error) {
+      console.error('Error updating last seen:', error);
+    }
+  };
 
   // Poll for new messages every 2 seconds
   useEffect(() => {
     if (!sessionId) return;
     
+    // Update last seen when component mounts
+    updateLastSeen();
+    
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`${API_BASE}?messages&session_id=${sessionId}${user ? `&user_id=${user.id}` : ''}`);
+        const res = await fetch(`${CHAT_BASE}?messages&session_id=${sessionId}${user ? `&user_id=${user.id}` : ''}`, {
+          headers: getAuthHeaders()
+        });
         const data = await res.json();
         if (data.success) {
-          const newMessages = data.messages || [];
-          setMessages(newMessages);
-          
-          // Check for new messages
-          if (newMessages.length > 0) {
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessageTime !== lastMessage.sent_at) {
-              setLastMessageTime(lastMessage.sent_at);
-              // Scroll to bottom for new messages
-              setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }, 100);
-            }
-          }
-          
-          // Update unread count
-          const unreadMessages = newMessages.filter(msg => 
-            msg.sender === 'admin' && msg.read_status === 'unread'
-          ).length;
-          setUnreadCount(unreadMessages);
+          setMessages(data.messages || []);
+          // Scroll to bottom for new messages
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
       } catch (error) {
         console.error('Error fetching messages:', error);
@@ -70,7 +65,7 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
     fetchMessages();
     const interval = setInterval(fetchMessages, 2000);
     return () => clearInterval(interval);
-  }, [sessionId, user, lastMessageTime]);
+  }, [sessionId, user]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -88,9 +83,12 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}?send`, {
+      const res = await fetch(`${CHAT_BASE}?send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           session_id: null,
           sender: 'user',
@@ -131,7 +129,10 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
       
       const res = await fetch(`${API_BASE}?send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({
           session_id: sessionId,
           sender: 'user',
@@ -167,9 +168,12 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
     }
     
     try {
-      await fetch(`${API_BASE}?delete_session`, {
+      await fetch(`${CHAT_BASE}?delete_session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ session_id: sessionId })
       });
       
@@ -194,20 +198,20 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
     };
     
     return (
-      <div className="flex flex-col items-center justify-center h-full p-8">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md border">
+      <div className="flex flex-col items-center h-full max-h-[600px] py-4 px-6">
+        <div className="bg-white rounded-lg w-full max-w-md">
           <div className="text-center mb-6">
-            <MessageSquare className="w-12 h-12 text-green-600 mx-auto mb-3" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Start Chat Support</h2>
-            <p className="text-gray-600">Get help from our expert team</p>
+            <MessageSquare className="w-10 h-10 text-green-600 mx-auto mb-2" />
+            <h2 className="text-xl font-bold text-gray-800 mb-1">Start Chat Support</h2>
+            <p className="text-sm text-gray-600">Get help from our expert team</p>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                 placeholder="Enter your name"
                 value={tempGuestName}
                 onChange={e => setTempGuestName(e.target.value)}
@@ -219,7 +223,7 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
               <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
               <input
                 type="email"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                 placeholder="Enter your email"
                 value={tempGuestEmail}
                 onChange={e => setTempGuestEmail(e.target.value)}
@@ -227,186 +231,181 @@ const ChatSupport = ({ setCurrentPage, user, customStyles = {}, hideHeader = fal
               />
             </div>
             
-            <button
-              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleGuestContinue}
-              disabled={!tempGuestName.trim()}
-            >
-              Start Chat
-            </button>
+            <div className="pb-4">
+              <button
+                className="w-full bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                onClick={handleGuestContinue}
+                disabled={!tempGuestName.trim()}
+              >
+                Start Chat
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
+  // CSS for custom scrollbar
+  const scrollbarStyles = `
+    /* Common scrollbar styles */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 6px;
+      border: 2px solid #f1f1f1;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    /* Firefox */
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+    
+    /* Ensure smooth scrolling on all devices */
+    .custom-scrollbar {
+      -webkit-overflow-scrolling: touch;
+      -ms-overflow-style: -ms-autohiding-scrollbar;
+      overflow-y: auto;
+    }
+    
+    /* Messages area specific styles */
+    .messages-area::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border: 2px solid #ffffff;
+    }
+    
+    /* For smaller screens */
+    @media (max-width: 640px) {
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+    }
+  `;
+
   return (
-    <div className="flex flex-col h-full w-full bg-gray-50 rounded-lg shadow-md border">
-      {/* Header */}
-      {!hideHeader && (
-        <div className="flex items-center gap-4 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 rounded-t-lg">
-          <MessageSquare className="w-8 h-8" />
-          <div className="flex-1">
-            <div className="font-bold text-lg">SIMS Support</div>
-            <div className="text-xs opacity-90 flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                Online
-              </div>
-              <span>•</span>
-              <span>Fast response</span>
-              {sessionStatus === 'resolved' && (
-                <>
-                  <span>•</span>
-                  <span className="text-yellow-300">Resolved</span>
-                </>
-              )}
+    <div className="flex flex-col h-full bg-white">
+      <style>{scrollbarStyles}</style>
+      
+      {/* Header with clear button */}
+      <div className="border-b border-gray-200 bg-white p-3 flex justify-end">
+        {sessionId && (
+          <button
+            onClick={clearConversation}
+            className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm font-medium px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+            title="Clear Conversation"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear Chat
+          </button>
+        )}
+      </div>
+
+
+
+
+      {/* Chat area */}
+      <div className="flex-grow overflow-y-auto custom-scrollbar messages-area" 
+           style={{ maxHeight: 'calc(100vh - 250px)', WebkitOverflowScrolling: 'touch' }}>
+        <div className="p-6 space-y-4">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-start min-h-[250px] pt-8">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Welcome to BuildIT PC Support</h3>
+              <p className="text-sm text-gray-600 text-center max-w-sm mb-6">
+                Our support team is here to help! Type your message below.
+              </p>
             </div>
-          </div>
+          ) : (
+            messages.map((msg, idx) => (
+              <div key={msg.id || idx} className={`flex items-start gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+
+                <div className={`group relative rounded-lg px-4 py-3 max-w-[80%] shadow-sm ${
+                  msg.sender === 'user' 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
+                  <div className={`text-xs mt-1 ${
+                    msg.sender === 'user' ? 'text-green-100' : 'text-gray-500'
+                  }`}>
+                    {new Date(msg.sent_at).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
           
-          {/* Session controls */}
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                {unreadCount} new
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                </div>
               </div>
-            )}
-            
-            {sessionId && (
-              <button
-                className="flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition text-sm font-semibold"
-                title="Clear Conversation"
-                onClick={clearConversation}
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear
-              </button>
-            )}
-          </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
-      )}
-      
-      {/* Quick Suggestions */}
-      {messages.length === 0 && (
-        <div className="bg-green-50 px-6 py-4 flex flex-wrap gap-2 border-b">
-          <div className="w-full text-sm text-gray-600 mb-2">Quick questions:</div>
-          {recommendedQuestions.map((q, i) => (
-            <button
-              key={i}
-              className="px-3 py-2 bg-white border border-green-200 rounded-lg text-green-700 text-sm hover:bg-green-100 transition-colors"
-              onClick={() => setNewMessage(q)}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      )}
-      
-      {/* Messages */}
-      <div className={`flex-1 overflow-y-auto p-6 space-y-4 ${customStyles.messagesArea || ''}`}>
-        {messages.length === 0 && (
-          <div className="text-center text-gray-400 py-8">
-            <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <div className="text-lg font-medium">No messages yet</div>
-            <div className="text-sm">Start the conversation by typing a message below!</div>
+      </div>
+
+      {/* Input area */}
+      <div className="mt-auto border-t bg-white">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 text-center text-sm">
+            {error}
           </div>
         )}
         
-        {messages.map((msg, idx) => (
-          <div key={msg.id || idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`group relative rounded-2xl px-4 py-3 max-w-xs lg:max-w-md shadow-sm ${
-              msg.sender === 'user' 
-                ? 'bg-green-500 text-white' 
-                : msg.message_type === 'system'
-                ? 'bg-gray-100 text-gray-600 border border-gray-200'
-                : 'bg-white border border-gray-200'
-            }`}>
-              {/* Message content */}
-              <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
-              
-              {/* Message metadata */}
-              <div className={`flex items-center justify-between mt-2 text-xs ${
-                msg.sender === 'user' ? 'text-green-100' : 'text-gray-500'
-              }`}>
-                <span>{msg.sent_at ? new Date(msg.sent_at).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                }) : ''}</span>
-                
-                {/* Read status for user messages */}
-                {msg.sender === 'user' && (
-                  <div className="flex items-center gap-1">
-                    {msg.read_status === 'read' ? (
-                      <CheckCircle className="w-3 h-3" title="Read" />
-                    ) : (
-                      <Clock className="w-3 h-3" title="Delivered" />
-                    )}
-                  </div>
-                )}
-                
-                {/* Message type indicator */}
-                {msg.message_type !== 'text' && (
-                  <div className="flex items-center gap-1">
-                    {msg.message_type === 'system' && <AlertCircle className="w-3 h-3" />}
-                    <span className="capitalize">{msg.message_type}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        {/* Typing indicator */}
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl px-4 py-3">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-              </div>
-            </div>
+        <div className="p-4 flex items-center gap-3">
+          <input
+            type="text"
+            className="flex-grow p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            placeholder={sessionStatus === 'resolved' ? 'Chat resolved. Start a new conversation...' : 'Type your message...'}
+            value={newMessage}
+            onChange={handleTyping}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            disabled={loading || sessionStatus === 'resolved'}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={loading || !newMessage.trim() || sessionStatus === 'resolved'}
+            className={`p-3 rounded-lg font-semibold flex items-center gap-2 transition-colors min-w-[90px] justify-center ${
+              loading || sessionStatus === 'resolved'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            <Send className="w-5 h-5" />
+            {loading ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+
+        {/* Session status indicator */}
+        {sessionStatus === 'resolved' && (
+          <div className="bg-yellow-50 border-t border-yellow-100 px-4 py-2 text-center text-sm text-yellow-700">
+            This chat has been marked as resolved. Start a new conversation to continue.
           </div>
         )}
-        
-        <div ref={messagesEndRef} />
       </div>
-      
-      {/* Input */}
-      <div className={`p-4 pb-6 px-4 border-t flex items-center gap-2 rounded-b-lg ${customStyles.inputArea || 'bg-white'}`}>
-        <input
-          type="text"
-          className="flex-1 min-w-0 border border-gray-300 rounded-full px-4 py-3 mr-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          placeholder={sessionStatus === 'resolved' ? 'Chat resolved. Start a new conversation...' : 'Type your message...'}
-          value={newMessage}
-          onChange={handleTyping}
-          onKeyDown={e => { 
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage(); 
-            }
-          }}
-          disabled={loading || sessionStatus === 'resolved'}
-        />
-        <button
-          className={`rounded-full font-semibold flex items-center gap-2 transition-colors min-w-[90px] justify-center px-4 py-3 ${
-            loading || sessionStatus === 'resolved'
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
-          onClick={sendMessage}
-          disabled={loading || sessionStatus === 'resolved'}
-        >
-          <Send className="w-5 h-5" /> 
-          {loading ? 'Sending...' : 'Send'}
-        </button>
-      </div>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-3 text-center text-sm">
-          {error}
-        </div>
-      )}
     </div>
   );
 };

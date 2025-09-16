@@ -1,15 +1,13 @@
 import React from 'react';
-import PCAssembly from './PCAssembly.jsx';
 
-// This component wraps the client PCAssembly and will be customized for Admin
-const AdminPCAssembly = (props) => {
-  // You can add Admin-specific logic, props, or UI customizations here
-  // For now, render the client PCAssembly
+const AdminPCAssembly = () => {
   return (
     <div>
-      <PCAssembly {...props} />
+      <h2>Admin PC Assembly</h2>
+      {/* Add PC Assembly logic and UI here as needed */}
+      <p>This is a placeholder for the Admin PC Assembly page.</p>
     </div>
   );
 };
 
-export default AdminPCAssembly; 
+export default AdminPCAssembly;

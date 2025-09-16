@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Use relative base so dist/index.html works under any subpath (e.g., /capstone2/dist/)
+  base: './',
   plugins: [react()],
   server: {
     port: 5175,
@@ -15,4 +17,4 @@ export default defineConfig({
       }
     },
   }
-}) 
+})

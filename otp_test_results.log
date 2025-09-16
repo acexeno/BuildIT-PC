@@ -1,0 +1,14 @@
+=== OTP Test Suite ===
+Started at: 2025-09-04 19:09:42
+
+[✅ PASS] Test 1: Generate OTP with valid email - OTP: 773356
+[✅ PASS] Test 2: Verify correct OTP - OTP verified
+[✅ PASS] Test 3: Reject incorrect OTP - Incorrect OTP rejected
+[✅ PASS] Test 4: Prevent OTP reuse - Used OTP rejected
+[✅ PASS] Test 5: Generate new OTP for same email - New OTP generated
+[✅ PASS] Test 6: Reject invalid email format - Invalid email rejected
+[✅ PASS] Test 7: Reject expired OTP - Expired OTP rejected
+
+=== Test Summary ===
+Tests Passed: 7/7
+Success Rate: 100%

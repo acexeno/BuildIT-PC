@@ -1,0 +1,5 @@
+[04-Sep-2025 20:44:04 Asia/Manila] PHP Fatal error:  Uncaught Error: Call to undefined function database_path() in C:\xampp\htdocs\capstone2\config\database.php:29
+Stack trace:
+#0 C:\xampp\htdocs\capstone2\test_db_connection_new.php(15): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\capstone2\config\database.php on line 29

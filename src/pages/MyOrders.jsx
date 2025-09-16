@@ -98,7 +98,7 @@ const MyOrders = ({ setCurrentPage }) => {
         </div>
         {/* How it works Box */}
         <div className="p-6 bg-yellow-50 rounded-lg border border-yellow-200 flex-1 mt-6 md:mt-0">
-          <h4 className="font-semibold text-yellow-900 mb-2">💡 How it works:</h4>
+                          <h4 className="font-semibold text-yellow-900 mb-2">How it works:</h4>
           <ul className="text-sm text-yellow-800 space-y-1">
             <li>• Build your PC using our compatibility checker</li>
             <li>• Purchase components from partner retailers</li>

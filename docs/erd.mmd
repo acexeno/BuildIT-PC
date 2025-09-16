@@ -1,0 +1,183 @@
+erDiagram
+    links {
+        style ortho
+    }
+  USERS {
+    int id
+    string username
+    string email
+    string password_hash
+    boolean is_active
+  }
+
+  ROLES {
+    int id
+    string name
+  }
+
+  USER_ROLES {
+    int user_id
+    int role_id
+  }
+
+  COMPONENT_CATEGORIES {
+    int id
+    string name
+  }
+
+  COMPONENTS {
+    int id
+    int category_id
+    string name
+    float price
+    int stock_quantity
+    boolean is_active
+  }
+
+  USER_BUILDS {
+    int id
+    int user_id
+    string name
+    float total_price
+    int compatibility_score
+  }
+
+  ORDERS {
+    int id
+    int user_id
+    datetime order_date
+    string status
+    float total
+    float total_price
+  }
+
+  ORDER_ITEMS {
+    int id
+    int order_id
+    int component_id
+    int quantity
+    float price
+  }
+
+  PREBUILTS {
+    int id
+    string name
+    float price
+    boolean in_stock
+    boolean is_hidden
+  }
+
+  SUPPLIERS {
+    int id
+    string name
+    boolean is_active
+  }
+
+  SUPPLIER_ORDERS {
+    int id
+    int supplier_id
+    string order_number
+    datetime order_date
+    date expected_delivery_date
+    string status
+    float total_amount
+    int created_by
+    int updated_by
+  }
+
+  SUPPLIER_ORDER_ITEMS {
+    int id
+    int supplier_order_id
+    int component_id
+    int quantity_ordered
+    float unit_price
+    float total_price
+  }
+
+  INVENTORY_ALERTS {
+    int id
+    int component_id
+    string alert_type
+    int current_stock
+    int threshold_level
+    boolean is_resolved
+    int resolved_by
+  }
+
+  SUPPLIER_COMMUNICATIONS {
+    int id
+    int supplier_id
+    string communication_type
+    string direction
+    string status
+    int created_by
+  }
+
+  NOTIFICATIONS {
+    int id
+    int user_id
+    int component_id
+    string type
+    boolean read_status
+  }
+
+  CHAT_SESSIONS {
+    int id
+    int user_id
+    string status
+    string priority
+  }
+
+  CHAT_MESSAGES {
+    int id
+    int session_id
+    string sender
+    string message_type
+    string read_status
+  }
+
+  LAST_SEEN_CHAT {
+    int user_id
+    int session_id
+    datetime last_seen_at
+  }
+
+  COMMUNITY_SUBMISSIONS {
+    int id
+    int build_id
+    int user_id
+    int reviewed_by
+    string status
+  }
+
+  USERS ||--o{ USER_ROLES : has
+  ROLES ||--o{ USER_ROLES : has
+
+  COMPONENT_CATEGORIES ||--o{ COMPONENTS : categorizes
+
+  USERS ||--o{ USER_BUILDS : creates
+  USERS ||--o{ ORDERS : places
+  ORDERS ||--o{ ORDER_ITEMS : contains
+  COMPONENTS ||--o{ ORDER_ITEMS : includes
+
+  SUPPLIERS ||--o{ SUPPLIER_ORDERS : receives
+  SUPPLIER_ORDERS ||--o{ SUPPLIER_ORDER_ITEMS : contains
+  COMPONENTS ||--o{ SUPPLIER_ORDER_ITEMS : includes
+
+  COMPONENTS ||--o{ INVENTORY_ALERTS : triggers
+  USERS ||--o{ INVENTORY_ALERTS : resolves
+
+  SUPPLIERS ||--o{ SUPPLIER_COMMUNICATIONS : has
+  USERS ||--o{ SUPPLIER_COMMUNICATIONS : logs
+
+  USERS ||--o{ NOTIFICATIONS : receives
+  COMPONENTS ||--o{ NOTIFICATIONS : about
+
+  USERS ||--o{ CHAT_SESSIONS : starts
+  CHAT_SESSIONS ||--o{ CHAT_MESSAGES : has
+  USERS ||--o{ LAST_SEEN_CHAT : tracks
+  CHAT_SESSIONS ||--o{ LAST_SEEN_CHAT : tracks
+
+  USER_BUILDS ||--o{ COMMUNITY_SUBMISSIONS : submitted
+  USERS ||--o{ COMMUNITY_SUBMISSIONS : submitted_by
+  USERS ||--o{ COMMUNITY_SUBMISSIONS : reviewed_by

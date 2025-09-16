@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { API_BASE } from '../utils/apiBase'
 import { Search, Filter, Eye, Plus, CheckCircle, AlertTriangle, ArrowRight, Package } from 'lucide-react'
 import { getComponentImage } from '../utils/componentImages'
 
@@ -43,14 +44,14 @@ const ComponentSelector = ({
 
   // Map frontend categories to database categories
   const categoryMapping = {
-    'cpu': 'Procie Only',
-    'motherboard': 'Mobo',
+    'cpu': 'CPU',
+    'motherboard': 'Motherboard',
     'gpu': 'GPU',
-    'ram': 'Ram 3200mhz',
-    'storage': 'Ssd Nvme',
-    'psu': 'Psu - Tr',
-    'case': 'Case Gaming',
-    'cooler': 'Aio'
+    'ram': 'RAM',
+    'storage': 'Storage',
+    'psu': 'PSU',
+    'case': 'Case',
+    'cooler': 'Cooler'
   }
 
   // Fetch components from API
@@ -60,7 +61,7 @@ const ComponentSelector = ({
     
     try {
       const dbCategory = categoryMapping[activeCategory]
-      const url = `/backend/api/index.php?endpoint=components&category=${encodeURIComponent(dbCategory)}`
+      const url = `${API_BASE}/index.php?endpoint=components&category=${encodeURIComponent(dbCategory)}`
       
       const response = await fetch(url)
       const data = await response.json()
@@ -81,157 +82,7 @@ const ComponentSelector = ({
     fetchComponents()
   }, [fetchComponents])
 
-  // Mock data function for development
-  const getMockComponents = (category) => {
-    const mockData = {
-      cpu: [
-        {
-          id: 1,
-          name: "AMD Ryzen 5 5600G",
-          brand: "AMD",
-          price: 8500,
-          stock_quantity: 5,
-          specs: { cores: 6, threads: 12, tdp: 65 }
-        },
-        {
-          id: 2,
-          name: "Intel Core i5-12400F",
-          brand: "Intel",
-          price: 9200,
-          stock_quantity: 3,
-          specs: { cores: 6, threads: 12, tdp: 65 }
-        }
-      ],
-      gpu: [
-        {
-          id: 3,
-          name: "NVIDIA RTX 4060",
-          brand: "NVIDIA",
-          price: 17300,
-          stock_quantity: 2,
-          specs: { memory: "8GB GDDR6" }
-        },
-        {
-          id: 4,
-          name: "AMD RX 6600",
-          brand: "AMD",
-          price: 13200,
-          stock_quantity: 4,
-          specs: { memory: "8GB GDDR6" }
-        }
-      ],
-      ram: [
-        {
-          id: 5,
-          name: "Kingston FURY BEAST DDR4 16GB",
-          brand: "Kingston",
-          price: 1450,
-          stock_quantity: 8,
-          specs: { speed: "3200MHz", type: "DDR4" }
-        },
-        {
-          id: 6,
-          name: "T-Force Delta RGB DDR4 32GB",
-          brand: "T-Force",
-          price: 2800,
-          stock_quantity: 3,
-          specs: { speed: "3200MHz", type: "DDR4" }
-        }
-      ],
-      motherboard: [
-        {
-          id: 7,
-          name: "ASRock B550M Steel Legend",
-          brand: "ASRock",
-          price: 8500,
-          stock_quantity: 2,
-          specs: { form_factor: "Micro-ATX", chipset: "B550" }
-        },
-        {
-          id: 8,
-          name: "MSI B550M PRO-VDH",
-          brand: "MSI",
-          price: 6500,
-          stock_quantity: 5,
-          specs: { form_factor: "Micro-ATX", chipset: "B550" }
-        }
-      ],
-      storage: [
-        {
-          id: 9,
-          name: "Samsung 970 EVO Plus 1TB",
-          brand: "Samsung",
-          price: 6350,
-          stock_quantity: 6,
-          specs: { capacity: "1TB", type: "NVMe SSD" }
-        },
-        {
-          id: 10,
-          name: "WD Blue SN570 500GB",
-          brand: "Western Digital",
-          price: 1900,
-          stock_quantity: 10,
-          specs: { capacity: "500GB", type: "NVMe SSD" }
-        }
-      ],
-      psu: [
-        {
-          id: 11,
-          name: "Corsair CX550F",
-          brand: "Corsair",
-          price: 2850,
-          stock_quantity: 4,
-          specs: { wattage: 550, efficiency: "80+ Bronze" }
-        },
-        {
-          id: 12,
-          name: "EVGA 600 BR",
-          brand: "EVGA",
-          price: 2200,
-          stock_quantity: 7,
-          specs: { wattage: 600, efficiency: "80+ Bronze" }
-        }
-      ],
-      case: [
-        {
-          id: 13,
-          name: "NZXT H510",
-          brand: "NZXT",
-          price: 6100,
-          stock_quantity: 3,
-          specs: { form_factor: "ATX", fans: 2 }
-        },
-        {
-          id: 14,
-          name: "Phanteks P300A",
-          brand: "Phanteks",
-          price: 3500,
-          stock_quantity: 5,
-          specs: { form_factor: "ATX", fans: 1 }
-        }
-      ],
-      cooler: [
-        {
-          id: 15,
-          name: "Cooler Master Hyper 212",
-          brand: "Cooler Master",
-          price: 1200,
-          stock_quantity: 8,
-          specs: { type: "Air Cooler", tdp: 150 }
-        },
-        {
-          id: 16,
-          name: "Corsair H100i RGB",
-          brand: "Corsair",
-          price: 6900,
-          stock_quantity: 2,
-          specs: { type: "Liquid Cooler", tdp: 200 }
-        }
-      ]
-    }
-    
-    return mockData[category] || []
-  }
+  
 
   // Filter and sort components
   const filteredComponents = components.filter(component =>
@@ -319,7 +170,7 @@ const ComponentSelector = ({
         </div>
         
         <div className="text-center py-12">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
+                          <div className="text-red-400 text-6xl mb-4">Warning</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load components</h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
@@ -451,7 +302,7 @@ const ComponentSelector = ({
                 {recommendations.length === 0 && !loadingRecommendations && (
                   <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-semibold text-blue-700">💡 Smart Recommendations</span>
+                      <span className="text-sm font-semibold text-blue-700">Smart Recommendations</span>
                     </div>
                     <div className="text-xs text-blue-600 space-y-1">
                       <p>• <strong>Try a different approach:</strong> Select components in this order: CPU → Motherboard → RAM → Storage → PSU → Case → GPU</p>
@@ -588,7 +439,7 @@ const ComponentSelector = ({
       {/* No Results */}
       {sortedComponents.length === 0 && !loading && (
         <div className="text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">🔍</div>
+                          <div className="text-gray-400 text-6xl mb-4">Search</div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No components found</h3>
           <p className="text-gray-600">Try adjusting your search terms or filters.</p>
         </div>

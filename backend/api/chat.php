@@ -1,9 +1,28 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../utils/jwt_helper.php';
 
-$pdo = get_db_connection();
+// Log function for debugging
+function logMessage($message) {
+    $logFile = __DIR__ . '/chat_debug.log';
+    $timestamp = date('Y-m-d H:i:s');
+    file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
+}
+
+try {
+    $pdo = get_db_connection();
+    logMessage("Database connection established successfully");
+} catch (PDOException $e) {
+    logMessage("Database connection failed: " . $e->getMessage());
+    header('Content-Type: application/json');
+    die(json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]));
+}
+
 header('Content-Type: application/json');
 
 function respond($data, $code = 200) {
@@ -177,8 +196,41 @@ if ($method === 'GET' && isset($_GET['messages']) && isset($_GET['session_id']))
     try {
         $session_id = intval($_GET['session_id']);
         $user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : null;
+        $guest_name = $_GET['guest_name'] ?? null;
+        $guest_email = $_GET['guest_email'] ?? null;
         
-        // Get messages
+        // First check if the session exists and is accessible
+        $query = 'SELECT cs.* FROM chat_sessions cs WHERE cs.id = ?';
+        $params = [$session_id];
+        
+        // For guests, verify the session belongs to them
+        if (!$user_id && ($guest_name || $guest_email)) {
+            $query .= ' AND (';
+            $conditions = [];
+            
+            if ($guest_name) {
+                $query .= 'cs.guest_name = ?';
+                $params[] = $guest_name;
+            }
+            
+            if ($guest_email) {
+                if ($guest_name) $query .= ' OR ';
+                $query .= 'cs.guest_email = ?';
+                $params[] = $guest_email;
+            }
+            
+            $query .= ')';
+        }
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        
+        if ($stmt->rowCount() === 0) {
+            // Session doesn't exist or doesn't belong to this user
+            respond(['success' => true, 'messages' => [], 'session_deleted' => true]);
+        }
+        
+        // Get messages with proper ordering
         $stmt = $pdo->prepare('
             SELECT * FROM chat_messages 
             WHERE session_id = ? 
@@ -192,9 +244,9 @@ if ($method === 'GET' && isset($_GET['messages']) && isset($_GET['session_id']))
             $stmt = $pdo->prepare('
                 UPDATE chat_messages 
                 SET read_status = "read" 
-                WHERE session_id = ? AND sender = "admin" AND read_status = "unread"
+                WHERE session_id = ? AND sender != ? AND read_status = "unread"
             ');
-            $stmt->execute([$session_id]);
+            $stmt->execute([$session_id, 'user']);
             
             // Update last seen
             $stmt = $pdo->prepare('
@@ -205,8 +257,13 @@ if ($method === 'GET' && isset($_GET['messages']) && isset($_GET['session_id']))
             $stmt->execute([$user_id, $session_id]);
         }
         
-        respond(['success' => true, 'messages' => $messages]);
+        // Also update session timestamp
+        $pdo->prepare('UPDATE chat_sessions SET updated_at = NOW() WHERE id = ?')
+            ->execute([$session_id]);
+        
+        respond(['success' => true, 'messages' => $messages, 'session_deleted' => false]);
     } catch (Exception $e) {
+        logMessage('Error in messages endpoint: ' . $e->getMessage());
         respond(['error' => 'Failed to load messages: ' . $e->getMessage()], 500);
     }
 }
@@ -273,9 +330,10 @@ if ($method === 'POST' && isset($_GET['send'])) {
             // Insert user's first message
             $stmt = $pdo->prepare('
                 INSERT INTO chat_messages (session_id, sender, message, message_type, read_status) 
-                VALUES (?, ?, ?, ?, "unread")
+                VALUES (?, ?, ?, ?, ?)
             ');
-            $stmt->execute([$session_id, $sender, $message, $message_type]);
+            $read_status = 'unread';
+            $stmt->execute([$session_id, $sender, $message, $message_type, $read_status]);
             
             // Send auto-reply
             $autoReply = 'Thank you for contacting SIMS Support! 🖥️ Our team will respond within 5-10 minutes. In the meantime, feel free to browse our PC components or check out our prebuilt systems.';
@@ -304,12 +362,25 @@ if ($method === 'POST' && isset($_GET['send'])) {
             respond(['success' => true, 'session_id' => $session_id, 'message' => 'Chat session created successfully']);
         }
 
+                // Verify the session exists and is accessible before inserting message
+        $checkSession = $pdo->prepare('SELECT id FROM chat_sessions WHERE id = ?');
+        $checkSession->execute([$session_id]);
+        
+        if ($checkSession->rowCount() === 0) {
+            respond(['error' => 'Invalid chat session'], 404);
+        }
+        
         // Insert the message
         $stmt = $pdo->prepare('
             INSERT INTO chat_messages (session_id, sender, message, message_type, read_status) 
-            VALUES (?, ?, ?, ?, "unread")
+            VALUES (?, ?, ?, ?, ?)
         ');
-        $stmt->execute([$session_id, $sender, $message, $message_type]);
+        $read_status = 'unread';
+        $stmt->execute([$session_id, $sender, $message, $message_type, $read_status]);
+        
+        // Update the session's updated_at timestamp
+        $pdo->prepare('UPDATE chat_sessions SET updated_at = NOW() WHERE id = ?')
+            ->execute([$session_id]);
         
         // Update session timestamp
         $pdo->prepare('UPDATE chat_sessions SET updated_at = NOW() WHERE id = ?')->execute([$session_id]);
@@ -524,6 +595,29 @@ if ($method === 'GET' && isset($_GET['check_permissions'])) {
         
     } catch (Exception $e) {
         respond(['error' => 'Failed to check permissions: ' . $e->getMessage()], 500);
+    }
+}
+
+// Update last seen timestamp for user
+if ($method === 'POST' && isset($_GET['update_last_seen'])) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $user_id = intval($input['user_id'] ?? 0);
+        $session_id = intval($input['session_id'] ?? 0);
+        
+        if (!$user_id || !$session_id) {
+            respond(['error' => 'Invalid user_id or session_id'], 400);
+        }
+        
+        // Update or insert last seen timestamp with session_id
+        $stmt = $pdo->prepare('INSERT INTO last_seen_chat (user_id, session_id, last_seen_at) VALUES (?, ?, NOW()) 
+                              ON DUPLICATE KEY UPDATE last_seen_at = NOW()');
+        $stmt->execute([$user_id, $session_id]);
+        
+        respond(['success' => true]);
+        
+    } catch (Exception $e) {
+        respond(['error' => 'Failed to update last seen: ' . $e->getMessage()], 500);
     }
 }
 

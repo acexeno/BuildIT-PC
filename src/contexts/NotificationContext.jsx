@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { API_BASE } from '../utils/apiBase'
 
 const NotificationContext = createContext()
 
@@ -42,7 +43,7 @@ export const NotificationProvider = ({ children, user }) => {
         return
       }
 
-      const response = await fetch('/backend/api/index.php?endpoint=notifications', {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=notifications`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -74,7 +75,7 @@ export const NotificationProvider = ({ children, user }) => {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const response = await fetch('/backend/api/index.php?endpoint=notifications&count=1', {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=notifications&count=1`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -99,7 +100,7 @@ export const NotificationProvider = ({ children, user }) => {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const response = await fetch('/backend/api/index.php?endpoint=notifications', {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=notifications`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +135,7 @@ export const NotificationProvider = ({ children, user }) => {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const response = await fetch('/backend/api/index.php?endpoint=notifications&action=mark-all-read', {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=notifications&action=mark-all-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -161,7 +162,7 @@ export const NotificationProvider = ({ children, user }) => {
       const token = localStorage.getItem('token')
       if (!token) return
 
-      const response = await fetch('/backend/api/index.php?endpoint=notifications', {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=notifications`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -195,7 +196,7 @@ export const NotificationProvider = ({ children, user }) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const response = await fetch('/backend/api/index.php?endpoint=notifications&all=1', {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=notifications&all=1`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Image Placeholder Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .category {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .category h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .placeholder {
+            display: inline-block;
+            width: 200px;
+            height: 200px;
+            margin: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            position: relative;
+            cursor: pointer;
+        }
+        .placeholder:hover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        .placeholder::after {
+            content: attr(data-name);
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            text-align: center;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .download-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .download-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Component Image Placeholder Generator</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <p>This tool helps you create placeholder images for your component system. Click on any placeholder to download it as a PNG file.</p>
+            <p><strong>Note:</strong> These are just placeholders. Replace them with actual component images for production use.</p>
+        </div>
+
+        <div class="category">
+            <h3>CPU Images</h3>
+            <div class="placeholder" data-name="ryzen-3200g.jpg" onclick="downloadImage(this, 'ryzen-3200g.jpg', 'CPU')"></div>
+            <div class="placeholder" data-name="ryzen-5600g.jpg" onclick="downloadImage(this, 'ryzen-5600g.jpg', 'CPU')"></div>
+            <div class="placeholder" data-name="ryzen-5600x-tray-fan.jpg" onclick="downloadImage(this, 'ryzen-5600x-tray-fan.jpg', 'CPU')"></div>
+            <div class="placeholder" data-name="ryzen-5700x.jpg" onclick="downloadImage(this, 'ryzen-5700x.jpg', 'CPU')"></div>
+            <div class="placeholder" data-name="ryzen-5800x.jpg" onclick="downloadImage(this, 'ryzen-5800x.jpg', 'CPU')"></div>
+            <div class="placeholder" data-name="ryzen-7600x.jpg" onclick="downloadImage(this, 'ryzen-7600x.jpg', 'CPU')"></div>
+            <div class="placeholder" data-name="default-cpu-1.jpg" onclick="downloadImage(this, 'default-cpu-1.jpg', 'CPU')"></div>
+        </div>
+
+        <div class="category">
+            <h3>GPU Images</h3>
+            <div class="placeholder" data-name="rtx-3060.jpg" onclick="downloadImage(this, 'rtx-3060.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="rtx-3070.jpg" onclick="downloadImage(this, 'rtx-3070.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="rtx-3080.jpg" onclick="downloadImage(this, 'rtx-3080.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="rtx-3090.jpg" onclick="downloadImage(this, 'rtx-3090.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="rx-6600.jpg" onclick="downloadImage(this, 'rx-6600.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="rx-6700xt.jpg" onclick="downloadImage(this, 'rx-6700xt.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="rx-6800xt.jpg" onclick="downloadImage(this, 'rx-6800xt.jpg', 'GPU')"></div>
+            <div class="placeholder" data-name="default-gpu-1.jpg" onclick="downloadImage(this, 'default-gpu-1.jpg', 'GPU')"></div>
+        </div>
+
+        <div class="category">
+            <h3>RAM Images</h3>
+            <div class="placeholder" data-name="kingston-fury-beast-8gb.jpg" onclick="downloadImage(this, 'kingston-fury-beast-8gb.jpg', 'RAM')"></div>
+            <div class="placeholder" data-name="corsair-vengeance-lpx-16gb.jpg" onclick="downloadImage(this, 'corsair-vengeance-lpx-16gb.jpg', 'RAM')"></div>
+            <div class="placeholder" data-name="gskill-ripjaws-v-32gb.jpg" onclick="downloadImage(this, 'gskill-ripjaws-v-32gb.jpg', 'RAM')"></div>
+            <div class="placeholder" data-name="crucial-ballistix-16gb.jpg" onclick="downloadImage(this, 'crucial-ballistix-16gb.jpg', 'RAM')"></div>
+            <div class="placeholder" data-name="default-ram-1.jpg" onclick="downloadImage(this, 'default-ram-1.jpg', 'RAM')"></div>
+        </div>
+
+        <div class="category">
+            <h3>Motherboard Images</h3>
+            <div class="placeholder" data-name="asrock-h510m-hvs.jpg" onclick="downloadImage(this, 'asrock-h510m-hvs.jpg', 'Motherboard')"></div>
+            <div class="placeholder" data-name="msi-b550m-pro-vdh.jpg" onclick="downloadImage(this, 'msi-b550m-pro-vdh.jpg', 'Motherboard')"></div>
+            <div class="placeholder" data-name="asus-rog-strix-b550f.jpg" onclick="downloadImage(this, 'asus-rog-strix-b550f.jpg', 'Motherboard')"></div>
+            <div class="placeholder" data-name="gigabyte-b660m-ds3h.jpg" onclick="downloadImage(this, 'gigabyte-b660m-ds3h.jpg', 'Motherboard')"></div>
+            <div class="placeholder" data-name="default-mobo-1.jpg" onclick="downloadImage(this, 'default-mobo-1.jpg', 'Motherboard')"></div>
+        </div>
+
+        <div class="category">
+            <h3>Storage Images</h3>
+            <div class="placeholder" data-name="samsung-970-evo-plus-500gb.jpg" onclick="downloadImage(this, 'samsung-970-evo-plus-500gb.jpg', 'Storage')"></div>
+            <div class="placeholder" data-name="wd-blue-sn570-1tb.jpg" onclick="downloadImage(this, 'wd-blue-sn570-1tb.jpg', 'Storage')"></div>
+            <div class="placeholder" data-name="crucial-p3-2tb.jpg" onclick="downloadImage(this, 'crucial-p3-2tb.jpg', 'Storage')"></div>
+            <div class="placeholder" data-name="seagate-barracuda-2tb.jpg" onclick="downloadImage(this, 'seagate-barracuda-2tb.jpg', 'Storage')"></div>
+            <div class="placeholder" data-name="default-storage-1.jpg" onclick="downloadImage(this, 'default-storage-1.jpg', 'Storage')"></div>
+        </div>
+
+        <div class="category">
+            <h3>PSU Images</h3>
+            <div class="placeholder" data-name="corsair-cx550f.jpg" onclick="downloadImage(this, 'corsair-cx550f.jpg', 'PSU')"></div>
+            <div class="placeholder" data-name="evga-600br.jpg" onclick="downloadImage(this, 'evga-600br.jpg', 'PSU')"></div>
+            <div class="placeholder" data-name="seasonic-focus-gx-650.jpg" onclick="downloadImage(this, 'seasonic-focus-gx-650.jpg', 'PSU')"></div>
+            <div class="placeholder" data-name="thermaltake-smart-500w.jpg" onclick="downloadImage(this, 'thermaltake-smart-500w.jpg', 'PSU')"></div>
+            <div class="placeholder" data-name="default-psu-1.jpg" onclick="downloadImage(this, 'default-psu-1.jpg', 'PSU')"></div>
+        </div>
+
+        <div class="category">
+            <h3>Case Images</h3>
+            <div class="placeholder" data-name="inplay-wind-01.jpg" onclick="downloadImage(this, 'inplay-wind-01.jpg', 'Case')"></div>
+            <div class="placeholder" data-name="nzxt-h510.jpg" onclick="downloadImage(this, 'nzxt-h510.jpg', 'Case')"></div>
+            <div class="placeholder" data-name="phanteks-p300a.jpg" onclick="downloadImage(this, 'phanteks-p300a.jpg', 'Case')"></div>
+            <div class="placeholder" data-name="fractal-meshify-c.jpg" onclick="downloadImage(this, 'fractal-meshify-c.jpg', 'Case')"></div>
+            <div class="placeholder" data-name="default-case-1.jpg" onclick="downloadImage(this, 'default-case-1.jpg', 'Case')"></div>
+        </div>
+
+        <div class="category">
+            <h3>Cooler Images</h3>
+            <div class="placeholder" data-name="cooler-master-hyper-212.jpg" onclick="downloadImage(this, 'cooler-master-hyper-212.jpg', 'Cooler')"></div>
+            <div class="placeholder" data-name="noctua-nh-u12s.jpg" onclick="downloadImage(this, 'noctua-nh-u12s.jpg', 'Cooler')"></div>
+            <div class="placeholder" data-name="corsair-h100i-rgb.jpg" onclick="downloadImage(this, 'corsair-h100i-rgb.jpg', 'Cooler')"></div>
+            <div class="placeholder" data-name="arctic-freezer-34.jpg" onclick="downloadImage(this, 'arctic-freezer-34.jpg', 'Cooler')"></div>
+            <div class="placeholder" data-name="default-cooler-1.jpg" onclick="downloadImage(this, 'default-cooler-1.jpg', 'Cooler')"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="download-btn" onclick="downloadAllImages()">Download All Placeholder Images</button>
+        </div>
+    </div>
+
+    <script>
+        function downloadImage(element, filename, category) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 400;
+            canvas.height = 400;
+            
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 400, 400);
+            gradient.addColorStop(0, '#e3f2fd');
+            gradient.addColorStop(1, '#bbdefb');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 400, 400);
+            
+            // Add pattern
+            ctx.strokeStyle = '#90caf9';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 400; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, 400);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(400, i);
+                ctx.stroke();
+            }
+            
+            // Add text
+            ctx.fillStyle = '#1976d2';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(category, 200, 180);
+            
+            ctx.fillStyle = '#424242';
+            ctx.font = '16px Arial';
+            ctx.fillText('Placeholder Image', 200, 210);
+            
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.fillText(filename, 200, 230);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        function downloadAllImages() {
+            const images = [
+                { name: 'ryzen-3200g.jpg', category: 'CPU' },
+                { name: 'ryzen-5600g.jpg', category: 'CPU' },
+                { name: 'ryzen-5600x-tray-fan.jpg', category: 'CPU' },
+                { name: 'ryzen-5700x.jpg', category: 'CPU' },
+                { name: 'ryzen-5800x.jpg', category: 'CPU' },
+                { name: 'ryzen-7600x.jpg', category: 'CPU' },
+                { name: 'default-cpu-1.jpg', category: 'CPU' },
+                { name: 'rtx-3060.jpg', category: 'GPU' },
+                { name: 'rtx-3070.jpg', category: 'GPU' },
+                { name: 'rtx-3080.jpg', category: 'GPU' },
+                { name: 'rtx-3090.jpg', category: 'GPU' },
+                { name: 'rx-6600.jpg', category: 'GPU' },
+                { name: 'rx-6700xt.jpg', category: 'GPU' },
+                { name: 'rx-6800xt.jpg', category: 'GPU' },
+                { name: 'default-gpu-1.jpg', category: 'GPU' },
+                { name: 'kingston-fury-beast-8gb.jpg', category: 'RAM' },
+                { name: 'corsair-vengeance-lpx-16gb.jpg', category: 'RAM' },
+                { name: 'gskill-ripjaws-v-32gb.jpg', category: 'RAM' },
+                { name: 'crucial-ballistix-16gb.jpg', category: 'RAM' },
+                { name: 'default-ram-1.jpg', category: 'RAM' },
+                { name: 'asrock-h510m-hvs.jpg', category: 'Motherboard' },
+                { name: 'msi-b550m-pro-vdh.jpg', category: 'Motherboard' },
+                { name: 'asus-rog-strix-b550f.jpg', category: 'Motherboard' },
+                { name: 'gigabyte-b660m-ds3h.jpg', category: 'Motherboard' },
+                { name: 'default-mobo-1.jpg', category: 'Motherboard' },
+                { name: 'samsung-970-evo-plus-500gb.jpg', category: 'Storage' },
+                { name: 'wd-blue-sn570-1tb.jpg', category: 'Storage' },
+                { name: 'crucial-p3-2tb.jpg', category: 'Storage' },
+                { name: 'seagate-barracuda-2tb.jpg', category: 'Storage' },
+                { name: 'default-storage-1.jpg', category: 'Storage' },
+                { name: 'corsair-cx550f.jpg', category: 'PSU' },
+                { name: 'evga-600br.jpg', category: 'PSU' },
+                { name: 'seasonic-focus-gx-650.jpg', category: 'PSU' },
+                { name: 'thermaltake-smart-500w.jpg', category: 'PSU' },
+                { name: 'default-psu-1.jpg', category: 'PSU' },
+                { name: 'inplay-wind-01.jpg', category: 'Case' },
+                { name: 'nzxt-h510.jpg', category: 'Case' },
+                { name: 'phanteks-p300a.jpg', category: 'Case' },
+                { name: 'fractal-meshify-c.jpg', category: 'Case' },
+                { name: 'default-case-1.jpg', category: 'Case' },
+                { name: 'cooler-master-hyper-212.jpg', category: 'Cooler' },
+                { name: 'noctua-nh-u12s.jpg', category: 'Cooler' },
+                { name: 'corsair-h100i-rgb.jpg', category: 'Cooler' },
+                { name: 'arctic-freezer-34.jpg', category: 'Cooler' },
+                { name: 'default-cooler-1.jpg', category: 'Cooler' }
+            ];
+            
+            images.forEach((img, index) => {
+                setTimeout(() => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 400;
+                    canvas.height = 400;
+                    
+                    const gradient = ctx.createLinearGradient(0, 0, 400, 400);
+                    gradient.addColorStop(0, '#e3f2fd');
+                    gradient.addColorStop(1, '#bbdefb');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, 400, 400);
+                    
+                    ctx.strokeStyle = '#90caf9';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 400; i += 20) {
+                        ctx.beginPath();
+                        ctx.moveTo(i, 0);
+                        ctx.lineTo(i, 400);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(0, i);
+                        ctx.lineTo(400, i);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.fillStyle = '#1976d2';
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(img.category, 200, 180);
+                    
+                    ctx.fillStyle = '#424242';
+                    ctx.font = '16px Arial';
+                    ctx.fillText('Placeholder Image', 200, 210);
+                    
+                    ctx.fillStyle = '#666';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(img.name, 200, 230);
+                    
+                    const link = document.createElement('a');
+                    link.download = img.name;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                }, index * 100);
+            });
+        }
+    </script>
+</body>
+</html>

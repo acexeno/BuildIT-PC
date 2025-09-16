@@ -97,7 +97,7 @@ const Sidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabCha
       {/* Removed duplicate notifications button for Super Admin */}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto max-h-[calc(100vh-200px)]">
         {/* Home for all except admin roles */}
         <button
           onClick={() => onPageChange('home')}
@@ -178,17 +178,17 @@ const Sidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabCha
             </button>
 
             <button
-              onClick={() => onPageChange('public-builds')}
+              onClick={() => onPageChange('prebuilt-pcs')}
               className={`w-full flex items-center px-5 py-2 text-sm font-medium rounded-md transition-colors truncate ${
-                currentPage === 'public-builds'
+                currentPage === 'prebuilt-pcs'
                   ? 'bg-green-100 text-green-700'
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
               <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
-              Community Builds
+              Prebuilt PCs & Community
             </button>
 
             <button
@@ -297,7 +297,7 @@ const Sidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabCha
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow hover:shadow-md"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

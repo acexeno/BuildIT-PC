@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Mapping Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-item { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .test-image { max-width: 200px; max-height: 200px; border: 1px solid #ddd; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Component Image Mapping Test</h1>
+    
+    <div class="test-item">
+        <h3>Testing: R5 5600G (TRAY) WITH HEATSINK FAN</h3>
+        <p>Expected path: <code>/images/components/cpu/r5_5600G_tray.png</code></p>
+        <img src="/images/components/cpu/r5_5600G_tray.png" 
+             alt="R5 5600G" 
+             class="test-image"
+             onload="this.nextElementSibling.textContent = '✅ Image loaded successfully'; this.nextElementSibling.className = 'success';"
+             onerror="this.nextElementSibling.textContent = '❌ Image failed to load'; this.nextElementSibling.className = 'error';">
+        <p id="result1">Loading...</p>
+    </div>
+
+    <div class="test-item">
+        <h3>Testing: Wrong path (what the error shows)</h3>
+        <p>Wrong path: <code>/images/components/cpu/R5 5600G (TRAY) WITH HEATSINK FAN.png</code></p>
+        <img src="/images/components/cpu/R5 5600G (TRAY) WITH HEATSINK FAN.png" 
+             alt="Wrong path" 
+             class="test-image"
+             onload="this.nextElementSibling.textContent = '✅ Image loaded (unexpected)'; this.nextElementSibling.className = 'success';"
+             onerror="this.nextElementSibling.textContent = '❌ Image failed to load (expected)'; this.nextElementSibling.className = 'error';">
+        <p id="result2">Loading...</p>
+    </div>
+
+    <div class="test-item">
+        <h3>Testing: Default fallback image</h3>
+        <p>Default path: <code>/images/components/default.png</code></p>
+        <img src="/images/components/default.png" 
+             alt="Default" 
+             class="test-image"
+             onload="this.nextElementSibling.textContent = '✅ Default image loaded successfully'; this.nextElementSibling.className = 'success';"
+             onerror="this.nextElementSibling.textContent = '❌ Default image failed to load'; this.nextElementSibling.className = 'error';">
+        <p id="result3">Loading...</p>
+    </div>
+
+    <script>
+        console.log('🧪 Testing image paths...');
+        
+        // Test the exact component name that's causing the error
+        const componentName = "R5 5600G (TRAY) WITH HEATSINK FAN";
+        console.log('Component name:', componentName);
+        
+        // Simulate what our mapping should return
+        const expectedPath = "/images/components/cpu/r5_5600G_tray.png";
+        console.log('Expected path:', expectedPath);
+        
+        // Test if the file exists
+        fetch(expectedPath)
+            .then(response => {
+                if (response.ok) {
+                    console.log('✅ Expected image path exists and is accessible');
+                } else {
+                    console.log('❌ Expected image path returned status:', response.status);
+                }
+            })
+            .catch(error => {
+                console.log('❌ Error accessing expected image path:', error);
+            });
+    </script>
+</body>
+</html>
+
+
+

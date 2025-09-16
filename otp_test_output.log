@@ -1,0 +1,22 @@
+=== OTP System Test ===
+Test started at: 2025-09-04 19:06:26
+
+Testing database connection...
+✅ Database connection successful!
+
+Checking OTP table...
+✅ OTP table exists.
+
+Testing OTP functionality...
+Sending OTP...
+[EMAIL] Sending to test@example.com: OTP for your account: 091860 (valid for 0.16666666666667 minutes)
+✅ OTP sent successfully!
+- Email: test@example.com
+- OTP: 091860
+- Token: dd234039e0334f1fd99bda59dfd52d39
+- Expires At: 2025-09-04 19:06:36
+
+Verifying OTP...
+✅ OTP verified successfully!
+
+Test completed at: 2025-09-04 19:06:27

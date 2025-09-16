@@ -1,0 +1,144 @@
+[04-Sep-2025 19:09:24 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 392150, Token: 98a9421778973662b26d8e37994e4d5a
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Record Found: Yes
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Record Details: Array
+(
+    [id] => 1
+    [email] => test@example.com
+    [otp] => 392150
+    [token] => 98a9421778973662b26d8e37994e4d5a
+    [expires_at] => 2025-09-04 19:09:34
+    [is_used] => 0
+    [ip_address] => 
+    [user_agent] => 
+    [created_at] => 2025-09-04 19:09:24
+    [updated_at] => 2025-09-04 19:09:24
+)
+
+[04-Sep-2025 19:09:24 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 000000, Token: 98a9421778973662b26d8e37994e4d5a
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Record Found: No
+[04-Sep-2025 19:09:24 Asia/Manila] Debug OTP Verification at: 2025-09-04 19:09:24
+[04-Sep-2025 19:09:24 Asia/Manila] Total OTP records for test@example.com: 1
+[04-Sep-2025 19:09:24 Asia/Manila] No OTP record found with matching email and OTP
+[04-Sep-2025 19:09:24 Asia/Manila] Most recent OTPs for test@example.com:
+[04-Sep-2025 19:09:24 Asia/Manila] [1] OTP: 392150, Token: 98a94217..., Created: 2025-09-04 19:09:24, Expires: 2025-09-04 19:09:24, Status: USED, VALID
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Verification Error: Invalid or expired OTP
+[04-Sep-2025 19:09:24 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 392150, Token: 98a9421778973662b26d8e37994e4d5a
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Record Found: No
+[04-Sep-2025 19:09:24 Asia/Manila] Debug OTP Verification at: 2025-09-04 19:09:24
+[04-Sep-2025 19:09:24 Asia/Manila] Total OTP records for test@example.com: 1
+[04-Sep-2025 19:09:24 Asia/Manila] Found OTP record with matching email and OTP:
+[04-Sep-2025 19:09:24 Asia/Manila] Array
+(
+    [id] => 1
+    [email] => test@example.com
+    [otp] => 392150
+    [token] => 98a9421778973662b26d8e37994e4d5a
+    [expires_at] => 2025-09-04 19:09:24
+    [is_used] => 1
+    [ip_address] => 
+    [user_agent] => 
+    [created_at] => 2025-09-04 19:09:24
+    [updated_at] => 2025-09-04 19:09:24
+)
+
+[04-Sep-2025 19:09:24 Asia/Manila] OTP has already been used
+[04-Sep-2025 19:09:24 Asia/Manila] OTP expired 00:00:00 ago
+[04-Sep-2025 19:09:24 Asia/Manila] Most recent OTPs for test@example.com:
+[04-Sep-2025 19:09:24 Asia/Manila] [1] OTP: 392150, Token: 98a94217..., Created: 2025-09-04 19:09:24, Expires: 2025-09-04 19:09:24, Status: USED, VALID
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Verification Error: Invalid or expired OTP
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Error: Invalid email format
+[04-Sep-2025 19:09:24 Asia/Manila] Verifying OTP - Email: expired@test.com, OTP: 123456, Token: expired-token
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Record Found: No
+[04-Sep-2025 19:09:24 Asia/Manila] Debug OTP Verification at: 2025-09-04 19:09:24
+[04-Sep-2025 19:09:24 Asia/Manila] Total OTP records for expired@test.com: 1
+[04-Sep-2025 19:09:24 Asia/Manila] Found OTP record with matching email and OTP:
+[04-Sep-2025 19:09:24 Asia/Manila] Array
+(
+    [id] => 3
+    [email] => expired@test.com
+    [otp] => 123456
+    [token] => expired-token
+    [expires_at] => 2025-09-04 18:09:24
+    [is_used] => 0
+    [ip_address] => 
+    [user_agent] => 
+    [created_at] => 2025-09-04 19:09:24
+    [updated_at] => 2025-09-04 19:09:24
+)
+
+[04-Sep-2025 19:09:24 Asia/Manila] OTP expired 01:00:00 ago
+[04-Sep-2025 19:09:24 Asia/Manila] Most recent OTPs for expired@test.com:
+[04-Sep-2025 19:09:24 Asia/Manila] [1] OTP: 123456, Token: expired-..., Created: 2025-09-04 19:09:24, Expires: 2025-09-04 18:09:24, Status: UNUSED, EXPIRED
+[04-Sep-2025 19:09:24 Asia/Manila] OTP Verification Error: Invalid or expired OTP
+[04-Sep-2025 19:09:42 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 773356, Token: f7c0621b0ed7e204a5212f4fa8f24514
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Record Found: Yes
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Record Details: Array
+(
+    [id] => 1
+    [email] => test@example.com
+    [otp] => 773356
+    [token] => f7c0621b0ed7e204a5212f4fa8f24514
+    [expires_at] => 2025-09-04 19:09:52
+    [is_used] => 0
+    [ip_address] => 
+    [user_agent] => 
+    [created_at] => 2025-09-04 19:09:42
+    [updated_at] => 2025-09-04 19:09:42
+)
+
+[04-Sep-2025 19:09:42 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 000000, Token: f7c0621b0ed7e204a5212f4fa8f24514
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Record Found: No
+[04-Sep-2025 19:09:42 Asia/Manila] Debug OTP Verification at: 2025-09-04 19:09:42
+[04-Sep-2025 19:09:42 Asia/Manila] Total OTP records for test@example.com: 1
+[04-Sep-2025 19:09:42 Asia/Manila] No OTP record found with matching email and OTP
+[04-Sep-2025 19:09:42 Asia/Manila] Most recent OTPs for test@example.com:
+[04-Sep-2025 19:09:42 Asia/Manila] [1] OTP: 773356, Token: f7c0621b..., Created: 2025-09-04 19:09:42, Expires: 2025-09-04 19:09:42, Status: USED, VALID
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Verification Error: Invalid or expired OTP
+[04-Sep-2025 19:09:42 Asia/Manila] Verifying OTP - Email: test@example.com, OTP: 773356, Token: f7c0621b0ed7e204a5212f4fa8f24514
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Record Found: No
+[04-Sep-2025 19:09:42 Asia/Manila] Debug OTP Verification at: 2025-09-04 19:09:42
+[04-Sep-2025 19:09:42 Asia/Manila] Total OTP records for test@example.com: 1
+[04-Sep-2025 19:09:42 Asia/Manila] Found OTP record with matching email and OTP:
+[04-Sep-2025 19:09:42 Asia/Manila] Array
+(
+    [id] => 1
+    [email] => test@example.com
+    [otp] => 773356
+    [token] => f7c0621b0ed7e204a5212f4fa8f24514
+    [expires_at] => 2025-09-04 19:09:42
+    [is_used] => 1
+    [ip_address] => 
+    [user_agent] => 
+    [created_at] => 2025-09-04 19:09:42
+    [updated_at] => 2025-09-04 19:09:42
+)
+
+[04-Sep-2025 19:09:42 Asia/Manila] OTP has already been used
+[04-Sep-2025 19:09:42 Asia/Manila] OTP expired 00:00:00 ago
+[04-Sep-2025 19:09:42 Asia/Manila] Most recent OTPs for test@example.com:
+[04-Sep-2025 19:09:42 Asia/Manila] [1] OTP: 773356, Token: f7c0621b..., Created: 2025-09-04 19:09:42, Expires: 2025-09-04 19:09:42, Status: USED, VALID
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Verification Error: Invalid or expired OTP
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Error: Invalid email format
+[04-Sep-2025 19:09:42 Asia/Manila] Verifying OTP - Email: expired@test.com, OTP: 123456, Token: expired-token
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Record Found: No
+[04-Sep-2025 19:09:42 Asia/Manila] Debug OTP Verification at: 2025-09-04 19:09:42
+[04-Sep-2025 19:09:42 Asia/Manila] Total OTP records for expired@test.com: 1
+[04-Sep-2025 19:09:42 Asia/Manila] Found OTP record with matching email and OTP:
+[04-Sep-2025 19:09:42 Asia/Manila] Array
+(
+    [id] => 3
+    [email] => expired@test.com
+    [otp] => 123456
+    [token] => expired-token
+    [expires_at] => 2025-09-04 18:09:42
+    [is_used] => 0
+    [ip_address] => 
+    [user_agent] => 
+    [created_at] => 2025-09-04 19:09:42
+    [updated_at] => 2025-09-04 19:09:42
+)
+
+[04-Sep-2025 19:09:42 Asia/Manila] OTP expired 01:00:00 ago
+[04-Sep-2025 19:09:42 Asia/Manila] Most recent OTPs for expired@test.com:
+[04-Sep-2025 19:09:42 Asia/Manila] [1] OTP: 123456, Token: expired-..., Created: 2025-09-04 19:09:42, Expires: 2025-09-04 18:09:42, Status: UNUSED, EXPIRED
+[04-Sep-2025 19:09:42 Asia/Manila] OTP Verification Error: Invalid or expired OTP

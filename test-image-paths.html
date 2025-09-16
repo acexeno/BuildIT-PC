@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Image Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .image-test {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            background: #f9f9f9;
+        }
+        .image-test img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            border: 1px solid #ccc;
+        }
+        .status {
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: orange; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Component Image Path Test</h1>
+        <p>This page tests if the component images are accessible at the correct paths.</p>
+        
+        <h2>CPU Images Test</h2>
+        <div id="cpu-test"></div>
+        
+        <h2>GPU Images Test</h2>
+        <div id="gpu-test"></div>
+        
+        <h2>RAM Images Test</h2>
+        <div id="ram-test"></div>
+        
+        <h2>Motherboard Images Test</h2>
+        <div id="motherboard-test"></div>
+        
+        <h2>Storage Images Test</h2>
+        <div id="storage-test"></div>
+        
+        <h2>PSU Images Test</h2>
+        <div id="psu-test"></div>
+        
+        <h2>Case Images Test</h2>
+        <div id="case-test"></div>
+        
+        <h2>Cooler Images Test</h2>
+        <div id="cooler-test"></div>
+    </div>
+
+    <script>
+        // Test images for each category
+        const testImages = {
+            cpu: [
+                '/images/components/cpu/R3 3200G (TRAY) WITH HEATSINK FAN.png',
+                '/images/components/cpu/r5_5600G_tray.png',
+                '/images/components/cpu/R5 5600X (TRAY) WITH HEATSINK FAN.png',
+                '/images/components/cpu/R7 5700X (TRAY) WITH HEATSINK FAN.png'
+            ],
+            gpu: [
+                '/images/components/gpu/GALAX RTX 3060 1-CLICK OC BLK 12GB.png',
+                '/images/components/gpu/GIGABYTE RTX 4060 AERO OC 8GB WHITE.png',
+                '/images/components/gpu/GIGABYTE RX 6600 8GB EAGLE.png'
+            ],
+            ram: [
+                '/images/components/ram/KINGSTON FURY BEAST DDR4 8GB.png',
+                '/images/components/ram/TFORCE Delta RGB DDR4 16GB kit (2x8gb) BLACK.png'
+            ],
+            motherboard: [
+                '/images/components/motherboard/ASRock B550M STEEL LEGEND.png',
+                '/images/components/motherboard/GIGABYTE B550M DS3H.png'
+            ],
+            storage: [
+                '/images/components/storage/Samsung 970 EVO Plus 500GB.png',
+                '/images/components/storage/WD Blue SN570 1TB.png'
+            ],
+            psu: [
+                '/images/components/psu/Corsair CX550F.png',
+                '/images/components/psu/EVGA 600 BR.png'
+            ],
+            case: [
+                '/images/components/case/INPLAY WIND 01.png',
+                '/images/components/case/NZXT H5 FLOW.png'
+            ],
+            cooler: [
+                '/images/components/cooler/DEEPCOOL AK400.png',
+                '/images/components/cooler/DEEPCOOL AK500.png'
+            ]
+        };
+
+        function testImage(path, containerId) {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'image-test';
+            
+            const img = document.createElement('img');
+            const status = document.createElement('div');
+            status.className = 'status loading';
+            status.textContent = 'Loading...';
+            
+            img.onload = function() {
+                status.textContent = '✅ Loaded successfully';
+                status.className = 'status success';
+            };
+            
+            img.onerror = function() {
+                status.textContent = '❌ Failed to load';
+                status.className = 'status error';
+            };
+            
+            img.src = path;
+            img.alt = path.split('/').pop();
+            
+            div.appendChild(img);
+            div.appendChild(status);
+            container.appendChild(div);
+        }
+
+        // Test all images
+        Object.keys(testImages).forEach(category => {
+            testImages[category].forEach(path => {
+                testImage(path, `${category}-test`);
+            });
+        });
+    </script>
+</body>
+</html>

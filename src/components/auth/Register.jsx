@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { validateNoEmoji } from '../../utils/validation';
+import { API_BASE } from '../../utils/apiBase';
 
 const Register = ({ onRegister, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -13,12 +15,38 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Check for emojis in the input
+    const emojiError = validateNoEmoji(value, name === 'email' ? 'Email' : name === 'username' ? 'Username' : 'Name');
+    if (emojiError) {
+      setError(emojiError);
+      return;
+    }
+    
+    setFormData({ ...formData, [name]: value });
     setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Final emoji check before submission
+    const fieldsToCheck = [
+      { name: 'firstName', label: 'First name' },
+      { name: 'lastName', label: 'Last name' },
+      { name: 'username', label: 'Username' },
+      { name: 'email', label: 'Email' }
+    ];
+    
+    for (const field of fieldsToCheck) {
+      const error = validateNoEmoji(formData[field.name], field.label);
+      if (error) {
+        setError(error);
+        return;
+      }
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -34,7 +62,7 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
         email: toSend.email,
         password: toSend.password
       };
-      const res = await fetch('/backend/api/index.php?endpoint=register', {
+      const res = await fetch(`${API_BASE}/index.php?endpoint=register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

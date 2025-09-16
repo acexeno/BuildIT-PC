@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, CheckCircle, Trash2, User, UserCheck, User2, AlertTriangle, Clock, BarChart3, RefreshCw, Send, MoreVertical, Phone, Video } from 'lucide-react';
+import { API_BASE } from '../utils/apiBase';
+const CHAT_BASE = `${API_BASE}/chat.php`;
 
-const API_BASE = '/backend/api/chat.php';
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 
 // Accept user prop for role/status coloring
 const AdminChatSupport = ({ user }) => {
@@ -18,10 +24,18 @@ const AdminChatSupport = ({ user }) => {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [showResolveModal, setShowResolveModal] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+      
+      if (isAtBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   };
 
   useEffect(() => {
@@ -61,7 +75,9 @@ const AdminChatSupport = ({ user }) => {
   // Fetch chat statistics
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API_BASE}?stats`);
+      const res = await fetch(`${CHAT_BASE}?stats`, {
+        headers: getAuthHeaders()
+      });
       const data = await res.json();
       if (data.success) {
         setStats(data.stats);
@@ -75,13 +91,17 @@ const AdminChatSupport = ({ user }) => {
   const fetchChats = async () => {
     setLoadingChats(true);
     try {
-      const res = await fetch(`${API_BASE}?sessions`);
+      const res = await fetch(`${CHAT_BASE}?sessions`, {
+        headers: getAuthHeaders()
+      });
       const data = await res.json();
       if (data.success) {
         setChats(data.sessions || []);
         if (data.sessions && data.sessions.length > 0 && !selectedChatId) {
           setSelectedChatId(data.sessions[0].id);
         }
+      } else if (data.error) {
+        setError(data.error);
       }
     } catch (error) {
         setError('Failed to load chat sessions.');
@@ -94,7 +114,9 @@ const AdminChatSupport = ({ user }) => {
     if (!selectedChatId) return;
     setLoadingMessages(true);
     try {
-      const res = await fetch(`${API_BASE}?messages&session_id=${selectedChatId}`);
+      const res = await fetch(`${CHAT_BASE}?messages&session_id=${selectedChatId}`, {
+        headers: getAuthHeaders()
+      });
       const data = await res.json();
       if (data.success) {
         setMessages(data.messages || []);
@@ -180,9 +202,12 @@ const AdminChatSupport = ({ user }) => {
     if (!reply.trim() || !selectedChatId) return;
     
     try {
-      const res = await fetch(`${API_BASE}?send`, {
+      const res = await fetch(`${CHAT_BASE}?send`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
         body: JSON.stringify({
           session_id: selectedChatId,
           message: reply.trim(),
@@ -209,9 +234,12 @@ const AdminChatSupport = ({ user }) => {
   // Reopen chat
   const handleReopenChat = async () => {
     try {
-      const res = await fetch(`${API_BASE}?reopen`, {
+      const res = await fetch(`${CHAT_BASE}?reopen`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       body: JSON.stringify({ session_id: selectedChatId })
       });
       
@@ -228,9 +256,12 @@ const AdminChatSupport = ({ user }) => {
   // Update priority
   const handleUpdatePriority = async (priority) => {
     try {
-      const res = await fetch(`${API_BASE}?update_priority`, {
+      const res = await fetch(`${CHAT_BASE}?update_priority`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ session_id: selectedChatId, priority })
       });
       
@@ -248,9 +279,12 @@ const AdminChatSupport = ({ user }) => {
     if (!confirm('Are you sure you want to delete this message?')) return;
     
     try {
-      const res = await fetch(`${API_BASE}?delete_message`, {
+      const res = await fetch(`${CHAT_BASE}?delete_message`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       body: JSON.stringify({ message_id: messageId })
     });
       
@@ -268,9 +302,12 @@ const AdminChatSupport = ({ user }) => {
     if (!confirm('Are you sure you want to delete this chat session? This action cannot be undone.')) return;
     
     try {
-      const res = await fetch(`${API_BASE}?delete_session`, {
+      const res = await fetch(`${CHAT_BASE}?delete_session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ session_id: chatId })
       });
       
@@ -290,9 +327,12 @@ const AdminChatSupport = ({ user }) => {
   // Confirm resolve with notes
   const confirmResolve = async () => {
     try {
-      const res = await fetch(`${API_BASE}?resolve`, {
+      const res = await fetch(`${CHAT_BASE}?resolve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ 
           session_id: selectedChatId, 
           resolution_notes: resolutionNotes 
@@ -453,7 +493,7 @@ const AdminChatSupport = ({ user }) => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white overflow-hidden h-full">
+      <div className="flex-1 flex flex-col bg-white overflow-hidden h-full min-h-0">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 p-4 text-center text-sm flex-shrink-0">
             {error}
@@ -461,7 +501,7 @@ const AdminChatSupport = ({ user }) => {
         )}
         
         {selectedChat ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
             {/* Header Bar */}
             <div className="flex items-center justify-between bg-white px-6 py-6 border-b border-gray-200 shadow-sm flex-shrink-0">
               <div className="flex-1">
@@ -475,7 +515,7 @@ const AdminChatSupport = ({ user }) => {
                 </div>
                 <div className="text-sm text-gray-500 mb-1">{selectedChat.guest_email || ''}</div>
                 <div className="text-xs text-gray-400">
-                  Session #{selectedChat.id} • Created {selectedChat.created_at ? new Date(selectedChat.created_at).toLocaleDateString() : ''}
+                  Created {selectedChat.created_at ? new Date(selectedChat.created_at).toLocaleDateString() : ''}
                 </div>
               </div>
               
@@ -511,7 +551,16 @@ const AdminChatSupport = ({ user }) => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto bg-gray-50 p-4 min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 p-4 min-h-0"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#9ca3af #f1f5f9',
+                flex: '1 1 auto',
+                minHeight: '0px'
+              }}
+            >
               {loadingMessages ? (
                 <div className="flex items-center justify-center h-32 text-gray-400">
                   <RefreshCw className="w-5 h-5 animate-spin mr-2" />
@@ -579,8 +628,8 @@ const AdminChatSupport = ({ user }) => {
               )}
             </div>
 
-            {/* Input Area */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-white flex-shrink-0">
+            {/* Input Area - Fixed at bottom */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-white flex-shrink-0 sticky bottom-0">
               <div className="flex items-center gap-3">
                                   <div className="flex-1 relative">
                     <input

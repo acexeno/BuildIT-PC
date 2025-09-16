@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../utils/apiBase';
 import { 
   Plus, 
   Edit, 
@@ -28,13 +29,13 @@ const SuperAdminPrebuiltPCs = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [components, setComponents] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [seeding, setSeeding] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     category: 'gaming',
     description: '',
-    image: '',
     price: '',
     performance: { gaming: '', streaming: '' },
     features: [''],
@@ -56,7 +57,7 @@ const SuperAdminPrebuiltPCs = () => {
   const fetchPrebuilts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/backend/api/prebuilts.php?all=1', {
+      const response = await fetch(`${API_BASE}/prebuilts.php?all=1`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -72,10 +73,35 @@ const SuperAdminPrebuiltPCs = () => {
     }
   };
 
+  // Seed default prebuilts from live components (Admin/Super Admin)
+  const handleGenerateDefaults = async () => {
+    if (!window.confirm('Generate curated default Prebuilt PC options from current inventory?')) return;
+    setSeeding(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/prebuilts.php?seed=1`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      if (result.success) {
+        await fetchPrebuilts();
+        alert(`Successfully generated ${Array.isArray(result.created) ? result.created.length : 0} prebuilts.`);
+      } else {
+        alert(result.error || 'Seeding failed');
+      }
+    } catch (e) {
+      console.error('Error seeding prebuilts:', e);
+      alert('Error seeding prebuilts. Please try again.');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   // Fetch components for selection
   const fetchComponents = async () => {
     try {
-      const response = await fetch('/backend/api/get_all_components.php');
+      const response = await fetch(`${API_BASE}/get_all_components.php`);
       const data = await response.json();
       if (data.success) {
         setComponents(data.data);
@@ -88,7 +114,7 @@ const SuperAdminPrebuiltPCs = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/backend/api/get_all_categories.php');
+      const response = await fetch(`${API_BASE}/get_all_categories.php`);
       const data = await response.json();
       if (data.success) {
         setCategories(data.data);
@@ -110,7 +136,6 @@ const SuperAdminPrebuiltPCs = () => {
       name: '',
       category: 'gaming',
       description: '',
-      image: '',
       price: '',
       performance: { gaming: '', streaming: '' },
       features: [''],
@@ -130,7 +155,6 @@ const SuperAdminPrebuiltPCs = () => {
         name: prebuilt.name,
         category: prebuilt.category,
         description: prebuilt.description || '',
-        image: prebuilt.image || '',
         price: prebuilt.price,
         performance: prebuilt.performance ? JSON.parse(prebuilt.performance) : { gaming: '', streaming: '' },
         features: prebuilt.features ? JSON.parse(prebuilt.features) : [''],
@@ -165,8 +189,8 @@ const SuperAdminPrebuiltPCs = () => {
     try {
       const token = localStorage.getItem('token');
       const url = editingPrebuilt 
-        ? `/backend/api/prebuilts.php?id=${editingPrebuilt.id}`
-        : '/backend/api/prebuilts.php';
+        ? `${API_BASE}/prebuilts.php?id=${editingPrebuilt.id}`
+        : `${API_BASE}/prebuilts.php`;
       
       const method = editingPrebuilt ? 'PUT' : 'POST';
       
@@ -200,7 +224,7 @@ const SuperAdminPrebuiltPCs = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/backend/api/prebuilts.php?id=${id}`, {
+      const response = await fetch(`${API_BASE}/prebuilts.php?id=${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -304,13 +328,24 @@ const SuperAdminPrebuiltPCs = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Prebuilt PC Management</h2>
-        <button
-          onClick={() => openModal()}
-          className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Add Prebuilt
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleGenerateDefaults}
+            disabled={seeding}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm border ${seeding ? 'bg-gray-100 text-gray-400' : 'bg-white hover:bg-gray-50 text-gray-800'}`}
+            title="Generate a fresh set of curated prebuilts from inventory"
+          >
+            <Shield className="h-4 w-4" />
+            {seeding ? 'Generating...' : 'Generate Defaults'}
+          </button>
+          <button
+            onClick={() => openModal()}
+            className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Prebuilt
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -343,19 +378,7 @@ const SuperAdminPrebuiltPCs = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPrebuilts.map((prebuilt) => (
           <div key={prebuilt.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Image */}
-            <div className="relative h-48 bg-gray-100">
-              {prebuilt.image ? (
-                <img
-                  src={prebuilt.image}
-                  alt={prebuilt.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Package className="w-12 h-12 text-gray-400" />
-                </div>
-              )}
+            <div className="relative">
               {/* Status badges */}
               <div className="absolute top-2 left-2 flex gap-2">
                 {prebuilt.is_hidden === '1' && (
@@ -477,27 +500,15 @@ const SuperAdminPrebuiltPCs = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-                  <input
-                    type="url"
-                    value={formData.image}
-                    onChange={(e) => updateFormData('image', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Price (₱)</label>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => updateFormData('price', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price (₱)</label>
+                <input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => updateFormData('price', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  required
+                />
               </div>
 
               {/* Performance */}
@@ -659,4 +670,4 @@ const SuperAdminPrebuiltPCs = () => {
   );
 };
 
-export default SuperAdminPrebuiltPCs; 
+export default SuperAdminPrebuiltPCs;

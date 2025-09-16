@@ -27,11 +27,19 @@ import {
   Lightbulb,
   Edit,
   LogIn,
-  User
+  User,
+  Share2,
+  Users,
+  CheckSquare,
+  Filter,
+  BarChart3
 } from 'lucide-react'
-import ComponentSelector from '../components/ComponentSelector'
+import EnhancedComponentSelector from '../components/EnhancedComponentSelector'
 import CompatibilityChecker from '../components/CompatibilityChecker'
+import CompatibilityComparisonModal from '../components/CompatibilityComparisonModal'
+import { getCompatibilityScore, filterCompatibleComponents } from '../utils/compatibilityService'
 import axios from 'axios'
+import { API_BASE } from '../utils/apiBase'
 
 const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, setSelectedComponents: setSelectedComponentsProp, onLoaded, user, onShowAuth, setUser }) => {
   // State management
@@ -60,6 +68,8 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showRestoreNotification, setShowRestoreNotification] = useState(false);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  // Force remount for child components after a full clear
+  const [resetNonce, setResetNonce] = useState(0);
   
   // Build State
   const [buildName, setBuildName] = useState('');
@@ -69,9 +79,17 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
   const [isEditing, setIsEditing] = useState(false);
   const [editingBuildId, setEditingBuildId] = useState(null);
   
+  // Community submission is now mandatory
+  const [submittingToCommunity, setSubmittingToCommunity] = useState(false);
+  
   // Compatibility State
   const [compatibilityStatus, setCompatibilityStatus] = useState({});
   const [compatibilityDetails, setCompatibilityDetails] = useState({});
+  
+  // Enhanced Compatibility State
+  const [showCompatibilityModal, setShowCompatibilityModal] = useState(false);
+  const [allComponents, setAllComponents] = useState([]);
+  const [compatibilityScore, setCompatibilityScore] = useState(100);
   
   // Recommendations State
   const [recommendations, setRecommendations] = useState({});
@@ -102,14 +120,49 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
 
   const getApiCategoryName = useCallback((key) => {
     switch (key) {
-      case 'cpu': return 'Cpu';
+      case 'cpu': return 'CPU';
       case 'motherboard': return 'Motherboard';
+      case 'gpu': return 'GPU';
       case 'ram': return 'RAM';
-      case 'psu': return 'Power Supply';
+      case 'storage': return 'Storage';
+      case 'psu': return 'PSU';
       case 'case': return 'Case';
+      case 'cooler': return 'Cooler';
       default: return '';
     }
   }, []);
+
+  // Update compatibility score when components change
+  useEffect(() => {
+    const score = getCompatibilityScore(selectedComponents);
+    setCompatibilityScore(score.score);
+  }, [selectedComponents]);
+
+  // Fetch all components for compatibility comparison
+  useEffect(() => {
+    const fetchAllComponents = async () => {
+      try {
+        const currentCategory = getCurrentCategory();
+        if (!currentCategory || !currentCategory.key) return;
+        
+        const dbCategory = getApiCategoryName(currentCategory.key);
+        const url = `${API_BASE}/index.php?endpoint=components&category=${encodeURIComponent(dbCategory)}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+          setAllComponents(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching components for comparison:', err);
+      }
+    };
+
+    fetchAllComponents();
+  }, [getCurrentCategory, getApiCategoryName]);
+
+
 
   const getNormalizedComponents = useCallback((components) => {
     const defaultKeys = {
@@ -195,7 +248,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       const ids = Object.values(componentIds).filter(id => id && typeof id === 'number');
       if (ids.length === 0) return {};
       
-      const url = `/backend/api/get_components_by_ids.php?ids=${ids.join(',')}`;
+      const url = `${API_BASE}/get_components_by_ids.php?ids=${ids.join(',')}`;
       const response = await fetch(url);
       const data = await response.json();
       
@@ -232,7 +285,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       if (requirements.minSize) apiParams.minSize = requirements.minSize;
       if (requirements.formFactor) apiParams.formFactor = requirements.formFactor;
       
-      let { data } = await axios.get('/backend/api/recommendations.php', { params: apiParams });
+      let { data } = await axios.get(`${API_BASE}/recommendations.php`, { params: apiParams });
       
       if (!data.data || data.data.length === 0) {
         const broaderParams = { 
@@ -241,7 +294,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
           minPrice: 1000,
           maxPrice: 500000
         };
-        const broaderResponse = await axios.get('/backend/api/recommendations.php', { params: broaderParams });
+        const broaderResponse = await axios.get(`${API_BASE}/recommendations.php`, { params: broaderParams });
         if (broaderResponse.data.data && broaderResponse.data.data.length > 0) {
           data = broaderResponse.data;
         }
@@ -249,7 +302,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       
       if (!data.data || data.data.length === 0) {
         const topParams = { category: apiCategory, limit: 3 };
-        const topResponse = await axios.get('/backend/api/recommendations.php', { params: topParams });
+        const topResponse = await axios.get(`${API_BASE}/recommendations.php`, { params: topParams });
         if (topResponse.data.data && topResponse.data.data.length > 0) {
           data = topResponse.data;
         }
@@ -430,7 +483,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
 
     // Case suggestions
     if (category === 'case' && selectedComponents.motherboard) {
-      const caseForm = getComponentSpec(component, 'formFactor');
+      const caseForm = getComponentSpec(selectedComponents.case, 'formFactor');
       const moboForm = getComponentSpec(selectedComponents.motherboard, 'formFactor');
       if (caseForm && moboForm) {
         // Support for multiple form factors in case
@@ -477,7 +530,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
   }, [componentCategories]);
 
   const handleClearAllComponents = useCallback(() => {
-    if (window.confirm('Are you sure you want to clear all selected components?')) {
+    // Automated clear without blocking confirm dialog
       const emptyComponents = {
         cpu: null,
         motherboard: null,
@@ -488,11 +541,34 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
         case: null,
         cooler: null
       };
-      setSelectedComponents(emptyComponents);
-      localStorage.removeItem('builditpc-selected-components');
+      // Reset both the source of truth (prop setter) and our internal fallback
+      try { setSelectedComponents(emptyComponents); } catch {}
+      try { setInternalSelectedComponents && setInternalSelectedComponents(emptyComponents); } catch {}
+
+      // Clear any persisted selections/editing state
+      try { localStorage.removeItem('builditpc-selected-components'); } catch {}
+      try { localStorage.removeItem('builditpc-editing-build'); } catch {}
+
+      // Reset derived UI state to avoid stale badges/totals
+      setCompatibilityStatus({});
+      setCompatibilityDetails({});
+      setRecommendations({});
+      setCompatibilityScore(0);
       setActiveStep(1);
-    }
-  }, [setSelectedComponents]);
+
+      // Exit editing mode and clear form fields if any
+      setIsEditing(false);
+      setEditingBuildId(null);
+      setBuildName('');
+      setBuildDescription('');
+
+      // Ensure our local persistence ref reflects the cleared state
+      try { prevComponentsRef.current = JSON.stringify(emptyComponents); } catch {}
+      // Force a remount of child selectors to clear any internal caches
+      setResetNonce(n => n + 1);
+      // Optional: broadcast a clear event for any listeners
+      try { window.dispatchEvent(new CustomEvent('builditpc:clear')); } catch {}
+  }, [setSelectedComponents, setInternalSelectedComponents]);
 
   // Calculation functions
   const getTotalPrice = useCallback(() => {
@@ -508,7 +584,6 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
   }, [selectedComponents]);
 
   const getCompatibilityScore = useCallback(() => {
-    const totalChecks = 4;
     const requiredCategories = ['cpu', 'motherboard', 'gpu', 'ram', 'storage', 'psu', 'case'];
     const selectedCount = requiredCategories.filter(category => {
       const component = selectedComponents[category];
@@ -516,21 +591,49 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
     }).length;
     if (selectedCount === 0) return 0;
     
+    // Define all possible compatibility checks
+    const allChecks = [
+      'cpu_motherboard',
+      'ram_motherboard', 
+      'ram_slots',
+      'ram_speed',
+      'storage_interface',
+      'psu_power',
+      'psu_form_factor',
+      'case_motherboard',
+      'gpu_length',
+      'cooler_height',
+      'cooler_socket',
+      'ram_cpu_speed'
+    ];
+    
+    // Count only the checks that are actually performed (have a status)
+    const performedChecks = allChecks.filter(check => compatibilityStatus[check] !== undefined);
+    if (performedChecks.length === 0) return 0;
+    
     let failed = 0;
-    if (compatibilityStatus.cpu_motherboard === false) failed++;
-    if (compatibilityStatus.ram_motherboard === false) failed++;
-    if (compatibilityStatus.psu_power === false) failed++;
-    if (compatibilityStatus.case_motherboard === false) failed++;
-    const passed = totalChecks - failed;
-    return Math.round((passed / totalChecks) * 100);
+    performedChecks.forEach(check => {
+      if (compatibilityStatus[check] === false) failed++;
+    });
+    
+    const passed = performedChecks.length - failed;
+    return Math.round((passed / performedChecks.length) * 100);
   }, [selectedComponents, compatibilityStatus]);
 
   const getCategoriesWithIssues = useCallback(() => {
     const issues = [];
     if (compatibilityStatus.cpu_motherboard === false) issues.push('cpu', 'motherboard');
     if (compatibilityStatus.ram_motherboard === false) issues.push('ram', 'motherboard');
+    if (compatibilityStatus.ram_slots === false) issues.push('ram', 'motherboard');
+    if (compatibilityStatus.ram_speed === false) issues.push('ram', 'motherboard');
+    if (compatibilityStatus.storage_interface === false) issues.push('storage', 'motherboard');
     if (compatibilityStatus.psu_power === false) issues.push('psu');
+    if (compatibilityStatus.psu_form_factor === false) issues.push('psu', 'case');
     if (compatibilityStatus.case_motherboard === false) issues.push('case', 'motherboard');
+    if (compatibilityStatus.gpu_length === false) issues.push('gpu', 'case');
+    if (compatibilityStatus.cooler_height === false) issues.push('cooler', 'case');
+    if (compatibilityStatus.cooler_socket === false) issues.push('cooler', 'cpu');
+    if (compatibilityStatus.ram_cpu_speed === false) issues.push('ram', 'cpu');
     return new Set(issues);
   }, [compatibilityStatus]);
 
@@ -614,15 +717,21 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
 
     switch (category) {
       case 'cpu':
-        return compatibilityStatus.cpu_motherboard === false;
+        return compatibilityStatus.cpu_motherboard === false || compatibilityStatus.cooler_socket === false || compatibilityStatus.ram_cpu_speed === false;
       case 'motherboard':
-        return compatibilityStatus.cpu_motherboard === false || compatibilityStatus.ram_motherboard === false;
+        return compatibilityStatus.cpu_motherboard === false || compatibilityStatus.ram_motherboard === false || compatibilityStatus.ram_slots === false || compatibilityStatus.ram_speed === false || compatibilityStatus.storage_interface === false || compatibilityStatus.case_motherboard === false;
       case 'ram':
-        return compatibilityStatus.ram_motherboard === false;
+        return compatibilityStatus.ram_motherboard === false || compatibilityStatus.ram_slots === false || compatibilityStatus.ram_speed === false || compatibilityStatus.ram_cpu_speed === false;
+      case 'storage':
+        return compatibilityStatus.storage_interface === false;
       case 'psu':
-        return compatibilityStatus.psu_power === false;
+        return compatibilityStatus.psu_power === false || compatibilityStatus.psu_form_factor === false;
       case 'case':
-        return compatibilityStatus.case_motherboard === false;
+        return compatibilityStatus.case_motherboard === false || compatibilityStatus.gpu_length === false || compatibilityStatus.cooler_height === false || compatibilityStatus.psu_form_factor === false;
+      case 'gpu':
+        return compatibilityStatus.gpu_length === false;
+      case 'cooler':
+        return compatibilityStatus.cooler_height === false || compatibilityStatus.cooler_socket === false;
       default:
         return false;
     }
@@ -682,8 +791,8 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       
       const method = isEditing ? 'PUT' : 'POST';
       let url = isEditing 
-        ? `/backend/api/index.php?endpoint=builds&id=${editingBuildId}`
-        : `/backend/api/index.php?endpoint=builds`;
+        ? `${API_BASE}/index.php?endpoint=builds&id=${editingBuildId}`
+        : `${API_BASE}/index.php?endpoint=builds`;
       
       // Debug: Check token and user
       console.log('=== DEBUG AUTHENTICATION ===');
@@ -717,6 +826,24 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       console.log('Response body:', result);
       
       if (result.success) {
+        const savedBuildId = result.data?.id || result.build_id;
+        
+        // Submit to community (mandatory for all builds)
+        if (savedBuildId) {
+          try {
+            await handleSubmitToCommunity(savedBuildId);
+            // Show success message
+            alert('Your build has been saved and submitted for community review! Admins will review and approve it for the community.');
+          } catch (error) {
+            // If community submission fails but build was saved, still show success for saving
+            console.error('Error during community submission:', error);
+            alert('Build saved successfully, but there was an error submitting for community review. You can submit it for review later from your builds.');
+          }
+        } else {
+          alert('Build saved successfully!');
+        }
+        
+        // Reset form
         setBuildName('');
         setBuildDescription('');
         setShowSaveModal(false);
@@ -741,6 +868,53 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       setSavingBuild(false);
     }
   }, [buildName, buildDescription, selectedComponents, isEditing, editingBuildId, getCompatibilityScore, getTotalPrice, setCurrentPage, user, setUser, userLoading]);
+
+  // Handle community submission
+  const handleSubmitToCommunity = useCallback(async (buildId) => {
+    const token = localStorage.getItem('token');
+    if (!token || isTokenExpired(token) || !user) {
+      setShowAuthPrompt(true);
+      throw new Error('Authentication required');
+    }
+
+    setSubmittingToCommunity(true);
+    try {
+      const response = await fetch(`${API_BASE}/community_submission.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          build_id: buildId,
+          build_name: buildName,
+          build_description: buildDescription,
+          total_price: getTotalPrice(),
+          compatibility: getCompatibilityScore()
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        console.error('Submission failed:', result.error);
+        throw new Error(result.error || 'Failed to submit build for review');
+      }
+
+      return result; // Return the result for the caller to handle
+    } catch (error) {
+      console.error('Error in handleSubmitToCommunity:', error);
+      throw error; // Re-throw to be handled by the caller
+    } finally {
+      setSubmittingToCommunity(false);
+    }
+  }, [buildName, buildDescription, getTotalPrice, getCompatibilityScore, user]);
 
   // Main useEffect for initialization and prebuilt selection
   useEffect(() => {
@@ -803,191 +977,368 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
     initializeComponent();
   }, [prebuiltComponents]); // Only depend on prebuiltComponents
 
-  // Compatibility check useEffect
+  // Enhanced Compatibility check useEffect
   useEffect(() => {
     const issues = {};
     const details = {};
 
-    // --- CPU-Motherboard compatibility ---
-    if (selectedComponents.cpu && selectedComponents.motherboard) {
-      function flattenFields(obj) {
-        if (!obj) return '';
-        let str = '';
-        for (const key in obj) {
-          if (typeof obj[key] === 'string') str += ' ' + obj[key];
-          if (typeof obj[key] === 'object' && obj[key] !== null) str += ' ' + flattenFields(obj[key]);
-        }
-        return str.toLowerCase().replace(/\s+/g, ' ');
+    // Helper function to extract and normalize component specifications
+    const getSpec = (component, specName) => {
+      if (!component) return null;
+      
+      // Try multiple possible field names for each spec
+      const specMappings = {
+        socket: ['socket', 'Socket', 'type', 'Type', 'cpu_socket'],
+        ramType: ['ramType', 'ram_type', 'memory_type', 'type', 'Type', 'ddr'],
+        formFactor: ['formFactor', 'form_factor', 'size', 'Size', 'type', 'Type'],
+        wattage: ['wattage', 'Wattage', 'power', 'Power', 'w', 'W'],
+        tdp: ['tdp', 'TDP', 'thermal_design_power', 'power_consumption'],
+        length: ['length', 'Length', 'max_length', 'maxLength', 'size'],
+        height: ['height', 'Height', 'max_height', 'maxHeight'],
+        width: ['width', 'Width', 'max_width', 'maxWidth'],
+        interface: ['interface', 'Interface', 'connection', 'Connection', 'type', 'Type'],
+        slots: ['slots', 'Slots', 'ram_slots', 'memory_slots', 'dimms'],
+        sticks: ['sticks', 'Sticks', 'modules', 'Modules', 'ram_modules'],
+        storage_interfaces: ['storage_interfaces', 'storage_support', 'sata_ports', 'm2_slots'],
+        gpu_max_length: ['gpu_max_length', 'max_gpu_length', 'gpu_length', 'max_length'],
+        cooler_max_height: ['cooler_max_height', 'max_cooler_height', 'cpu_cooler_height'],
+        psu_support: ['psu_support', 'psu_type', 'power_supply_support'],
+        chipset: ['chipset', 'Chipset', 'platform', 'Platform']
+      };
+
+      const possibleFields = specMappings[specName] || [specName];
+      
+      for (const field of possibleFields) {
+        if (component[field]) return component[field];
+        if (component.specs && component.specs[field]) return component.specs[field];
       }
-      const cpuFlat = flattenFields(selectedComponents.cpu);
-      const moboFlat = flattenFields(selectedComponents.motherboard);
-      const cpuIsIntel = cpuFlat.includes('intel');
-      const moboIsIntel = moboFlat.includes('intel');
-      const cpuIsAMD = cpuFlat.includes('amd');
-      const moboIsAMD = moboFlat.includes('amd');
-      const cpuHasAM4 = cpuFlat.includes('am4');
-      const moboHasAM4 = moboFlat.includes('am4');
-      const cpuHasAM5 = cpuFlat.includes('am5');
-      const moboHasAM5 = moboFlat.includes('am5');
-      const cpuHasLGA1200 = cpuFlat.includes('lga1200');
-      const moboHasLGA1200 = moboFlat.includes('lga1200');
-      const cpuHasLGA1700 = cpuFlat.includes('lga1700');
-      const moboHasLGA1700 = moboFlat.includes('lga1700');
-      // Brand mismatch
-      if ((cpuIsIntel && moboIsAMD) || (cpuIsAMD && moboIsIntel)) {
-        issues.cpu_motherboard = false;
-        details.cpu_motherboard = 'Intel and AMD CPUs are not compatible with each other\'s motherboards.';
-      } else if ((cpuIsAMD && moboIsAMD && cpuHasAM4 && moboHasAM4)) {
-        issues.cpu_motherboard = true;
-        const moboIsB450 = moboFlat.includes('b450');
-        const cpuIsRyzen5000 = cpuFlat.match(/ryzen\s*5[0-9]{3}/) || cpuFlat.match(/5600g|5700g|5800x|5900x|5950x/);
-        if (moboIsB450 && cpuIsRyzen5000) {
-          details.cpu_motherboard = 'Compatible (AM4). Note: B450 motherboards may require a BIOS update to support Ryzen 5000 series CPUs.';
+      
+      // Fallback: search in name and description
+      const searchText = `${component.name || ''} ${component.description || ''}`.toLowerCase();
+      if (specName === 'socket' && searchText.includes('am4')) return 'AM4';
+      if (specName === 'socket' && searchText.includes('am5')) return 'AM5';
+      if (specName === 'socket' && searchText.includes('lga1200')) return 'LGA1200';
+      if (specName === 'socket' && searchText.includes('lga1700')) return 'LGA1700';
+      if (specName === 'ramType' && searchText.includes('ddr4')) return 'DDR4';
+      if (specName === 'ramType' && searchText.includes('ddr5')) return 'DDR5';
+      if (specName === 'formFactor' && searchText.includes('atx')) return 'ATX';
+      if (specName === 'formFactor' && searchText.includes('micro-atx')) return 'Micro-ATX';
+      if (specName === 'formFactor' && searchText.includes('mini-itx')) return 'Mini-ITX';
+      
+      return null;
+    };
+
+    // --- CPU-Motherboard Socket Compatibility ---
+    if (selectedComponents.cpu && selectedComponents.motherboard) {
+      const cpuSocket = getSpec(selectedComponents.cpu, 'socket');
+      const moboSocket = getSpec(selectedComponents.motherboard, 'socket');
+      const cpuName = selectedComponents.cpu.name || '';
+      const moboName = selectedComponents.motherboard.name || '';
+      
+      // Enhanced socket compatibility checking
+      const socketCompatible = () => {
+        if (!cpuSocket || !moboSocket) return null;
+        
+        const cpuSocketNorm = cpuSocket.toLowerCase().trim();
+        const moboSocketNorm = moboSocket.toLowerCase().trim();
+        
+        // AMD Sockets
+        if (cpuSocketNorm.includes('am4') && moboSocketNorm.includes('am4')) {
+          // Check for Ryzen 5000 series on older chipsets
+          const isRyzen5000 = /ryzen\s*(5[0-9]{3}|5600|5700|5800|5900|5950)/i.test(cpuName);
+          const isOldChipset = /(a320|b350|b450|a520)/i.test(moboName);
+          
+          if (isRyzen5000 && isOldChipset) {
+            return { compatible: true, warning: 'May require BIOS update for Ryzen 5000 series' };
+          }
+          return { compatible: true };
         }
-      } else if ((cpuIsAMD && moboIsAMD && cpuHasAM5 && moboHasAM5)) {
+        
+        if (cpuSocketNorm.includes('am5') && moboSocketNorm.includes('am5')) {
+          return { compatible: true };
+        }
+        
+        // Intel Sockets
+        if (cpuSocketNorm.includes('lga1200') && moboSocketNorm.includes('lga1200')) {
+          return { compatible: true };
+        }
+        
+        if (cpuSocketNorm.includes('lga1700') && moboSocketNorm.includes('lga1700')) {
+          return { compatible: true };
+        }
+        
+        if (cpuSocketNorm.includes('lga1851') && moboSocketNorm.includes('lga1851')) {
+          return { compatible: true };
+        }
+        
+        return { compatible: false };
+      };
+      
+      const socketResult = socketCompatible();
+      
+      if (socketResult === null) {
+        details.cpu_motherboard = 'Cannot determine socket compatibility (missing data)';
+      } else if (socketResult.compatible) {
         issues.cpu_motherboard = true;
-      } else if (
-        cpuIsIntel && moboIsIntel && (
-          (cpuHasLGA1200 && moboHasLGA1200) ||
-          (cpuHasLGA1700 && moboHasLGA1700) ||
-          (cpuFlat.match(/i[3579]-1[01][0-9]{3}/) &&
-            (moboFlat.includes('h510') || moboFlat.includes('b460') || moboFlat.includes('b560') || moboFlat.includes('z490') || moboFlat.includes('z590') || moboFlat.includes('h610') || moboFlat.includes('b660') || moboFlat.includes('z690')))
-        )
-      ) {
-        issues.cpu_motherboard = true;
-      } else if (
-        (cpuIsIntel || cpuIsAMD) && (moboIsIntel || moboIsAMD)
-      ) {
-        // Both brands are present but no match
-        issues.cpu_motherboard = false;
-        details.cpu_motherboard = 'CPU and Motherboard are not compatible. Please check socket and chipset.';
+        if (socketResult.warning) {
+          details.cpu_motherboard = `Compatible. ${socketResult.warning}`;
+        }
       } else {
-        // Missing data, cannot determine
-        details.cpu_motherboard = 'Cannot determine CPU-Motherboard compatibility (missing data)';
+        issues.cpu_motherboard = false;
+        details.cpu_motherboard = `CPU socket (${cpuSocket}) is not compatible with motherboard socket (${moboSocket})`;
       }
     }
 
-    // --- RAM-Motherboard compatibility ---
+    // --- RAM-Motherboard Compatibility ---
     if (selectedComponents.ram && selectedComponents.motherboard) {
-      const ramType = getComponentSpec(selectedComponents.ram, 'ramType');
-      const moboRamType = getComponentSpec(selectedComponents.motherboard, 'ramType');
+      const ramType = getSpec(selectedComponents.ram, 'ramType');
+      const moboRamType = getSpec(selectedComponents.motherboard, 'ramType');
+      const ramSticks = getSpec(selectedComponents.ram, 'sticks') || 1;
+      const moboSlots = getSpec(selectedComponents.motherboard, 'slots') || 2;
+      const ramSpeed = getSpec(selectedComponents.ram, 'speed') || getSpec(selectedComponents.ram, 'frequency');
+      const moboMaxSpeed = getSpec(selectedComponents.motherboard, 'max_ram_speed') || getSpec(selectedComponents.motherboard, 'memory_speed');
+      
+      // RAM Type compatibility
       if (ramType && moboRamType) {
-        if (ramType !== moboRamType) {
+        const ramTypeNorm = ramType.toLowerCase().trim();
+        const moboRamTypeNorm = moboRamType.toLowerCase().trim();
+        
+        if (ramTypeNorm !== moboRamTypeNorm) {
           issues.ram_motherboard = false;
-          details.ram_motherboard = `RAM type (${ramType}) does not match Motherboard supported type (${moboRamType})`;
+          details.ram_motherboard = `RAM type (${ramType}) is not compatible with motherboard (${moboRamType})`;
         } else {
           issues.ram_motherboard = true;
         }
-      } else if (ramType || moboRamType) {
-        details.ram_motherboard = 'Cannot determine RAM compatibility (missing data)';
+      } else {
+        details.ram_motherboard = 'Cannot determine RAM type compatibility (missing data)';
       }
-      // RAM sticks vs. motherboard slots
-      const ramSticks = getComponentSpec(selectedComponents.ram, 'sticks') || getComponentSpec(selectedComponents.ram, 'modules') || 1;
-      const moboSlots = getComponentSpec(selectedComponents.motherboard, 'ram_slots') || getComponentSpec(selectedComponents.motherboard, 'slots') || 2;
-      if (ramSticks && moboSlots && ramSticks > moboSlots) {
+      
+      // RAM Slots compatibility
+      if (ramSticks > moboSlots) {
         issues.ram_slots = false;
         details.ram_slots = `Selected RAM (${ramSticks} sticks) exceeds motherboard slots (${moboSlots})`;
       }
+      
+      // RAM Speed compatibility
+      if (ramSpeed && moboMaxSpeed) {
+        const ramSpeedNum = parseInt(ramSpeed);
+        const moboSpeedNum = parseInt(moboMaxSpeed);
+        
+        if (ramSpeedNum > moboSpeedNum) {
+          issues.ram_speed = false;
+          details.ram_speed = `RAM speed (${ramSpeed}MHz) exceeds motherboard maximum (${moboMaxSpeed}MHz)`;
+        }
+      }
     }
 
-    // --- Storage-Motherboard compatibility ---
+    // --- Storage-Motherboard Compatibility ---
     if (selectedComponents.storage && selectedComponents.motherboard) {
-      const storageInterface = getComponentSpec(selectedComponents.storage, 'interface') || getComponentSpec(selectedComponents.storage, 'type');
-      const moboStorage = getComponentSpec(selectedComponents.motherboard, 'storage_interfaces') || getComponentSpec(selectedComponents.motherboard, 'storage_support');
-      if (storageInterface && moboStorage) {
-        if (!String(moboStorage).toLowerCase().includes(String(storageInterface).toLowerCase())) {
+      const storageInterface = getSpec(selectedComponents.storage, 'interface');
+      const moboStorageSupport = getSpec(selectedComponents.motherboard, 'storage_interfaces');
+      
+      if (storageInterface && moboStorageSupport) {
+        const interfaceNorm = storageInterface.toLowerCase();
+        const supportNorm = moboStorageSupport.toLowerCase();
+        
+        // Check for common storage interfaces
+        const isCompatible = 
+          (interfaceNorm.includes('sata') && supportNorm.includes('sata')) ||
+          (interfaceNorm.includes('nvme') && supportNorm.includes('nvme')) ||
+          (interfaceNorm.includes('m.2') && supportNorm.includes('m.2')) ||
+          (interfaceNorm.includes('pcie') && supportNorm.includes('pcie'));
+        
+        if (!isCompatible) {
           issues.storage_interface = false;
-          details.storage_interface = `Storage interface (${storageInterface}) not supported by motherboard (${moboStorage})`;
+          details.storage_interface = `Storage interface (${storageInterface}) not supported by motherboard`;
+        } else {
+          issues.storage_interface = true;
         }
-      } else if (storageInterface || moboStorage) {
+      } else {
         details.storage_interface = 'Cannot determine storage compatibility (missing data)';
       }
     }
 
-    // --- PSU compatibility ---
+    // --- PSU Power Compatibility ---
     if (selectedComponents.psu) {
-      const cpuTdp = getComponentSpec(selectedComponents.cpu, 'tdp') || 65;
-      const gpuTdp = getComponentSpec(selectedComponents.gpu, 'tdp') || 150;
-      const totalPower = cpuTdp + gpuTdp + 100;
-      const recommendedWattage = Math.ceil((totalPower * 1.2) / 10) * 10;
-      const psuWatt = getComponentSpec(selectedComponents.psu, 'wattage');
-      if (psuWatt) {
-        if (psuWatt < recommendedWattage) {
+      const psuWattage = getSpec(selectedComponents.psu, 'wattage');
+      
+      if (psuWattage) {
+        // Calculate estimated power requirements
+        let totalPower = 0;
+        
+        // CPU power
+        if (selectedComponents.cpu) {
+          const cpuTdp = getSpec(selectedComponents.cpu, 'tdp') || 65;
+          totalPower += parseInt(cpuTdp);
+        }
+        
+        // GPU power
+        if (selectedComponents.gpu) {
+          const gpuTdp = getSpec(selectedComponents.gpu, 'tdp') || 150;
+          totalPower += parseInt(gpuTdp);
+        }
+        
+        // Base system power (motherboard, RAM, storage, fans, etc.)
+        totalPower += 100;
+        
+        // Add 20% buffer for efficiency and headroom
+        const recommendedWattage = Math.ceil((totalPower * 1.2) / 50) * 50;
+        const psuWattageNum = parseInt(psuWattage);
+        
+        if (psuWattageNum < recommendedWattage) {
           issues.psu_power = false;
-          details.psu_power = `PSU wattage (${psuWatt}W) is less than recommended (${recommendedWattage}W)`;
+          details.psu_power = `PSU wattage (${psuWattage}W) is below recommended (${recommendedWattage}W) for your components`;
+        } else if (psuWattageNum < recommendedWattage * 1.5) {
+          issues.psu_power = true;
+          details.psu_power = `PSU wattage (${psuWattage}W) is adequate but consider ${recommendedWattage * 1.5}W for better efficiency`;
         } else {
           issues.psu_power = true;
         }
       } else {
         details.psu_power = 'Cannot determine PSU compatibility (missing wattage data)';
       }
-      // PSU form factor vs. case
+      
+      // PSU Form Factor compatibility
       if (selectedComponents.case) {
-        const psuForm = getComponentSpec(selectedComponents.psu, 'form_factor') || getComponentSpec(selectedComponents.psu, 'type');
-        const casePsuSupport = getComponentSpec(selectedComponents.case, 'psu_support') || getComponentSpec(selectedComponents.case, 'psu_type');
-        if (psuForm && casePsuSupport) {
-          if (!String(casePsuSupport).toLowerCase().includes(String(psuForm).toLowerCase())) {
+        const psuFormFactor = getSpec(selectedComponents.psu, 'form_factor');
+        const casePsuSupport = getSpec(selectedComponents.case, 'psu_support');
+        
+        if (psuFormFactor && casePsuSupport) {
+          const psuFormNorm = psuFormFactor.toLowerCase();
+          const caseSupportNorm = casePsuSupport.toLowerCase();
+          
+          const isCompatible = 
+            (psuFormNorm.includes('atx') && caseSupportNorm.includes('atx')) ||
+            (psuFormNorm.includes('sfx') && caseSupportNorm.includes('sfx')) ||
+            (psuFormNorm.includes('sfx-l') && caseSupportNorm.includes('sfx-l'));
+          
+          if (!isCompatible) {
             issues.psu_form_factor = false;
-            details.psu_form_factor = `PSU form factor (${psuForm}) not supported by case (${casePsuSupport})`;
+            details.psu_form_factor = `PSU form factor (${psuFormFactor}) not supported by case`;
+          } else {
+            issues.psu_form_factor = true;
           }
-        } else if (psuForm || casePsuSupport) {
-          details.psu_form_factor = 'Cannot determine PSU form factor compatibility (missing data)';
         }
       }
     }
 
-    // --- GPU-Case compatibility ---
-    if (selectedComponents.gpu && selectedComponents.case) {
-      const gpuLength = getComponentSpec(selectedComponents.gpu, 'length') || getComponentSpec(selectedComponents.gpu, 'max_length');
-      const caseGpuMax = getComponentSpec(selectedComponents.case, 'gpu_max_length') || getComponentSpec(selectedComponents.case, 'max_gpu_length');
-      if (gpuLength && caseGpuMax) {
-        if (Number(gpuLength) > Number(caseGpuMax)) {
-          issues.gpu_length = false;
-          details.gpu_length = `GPU length (${gpuLength}mm) exceeds case max GPU length (${caseGpuMax}mm)`;
+    // --- Case-Motherboard Form Factor Compatibility ---
+    if (selectedComponents.case && selectedComponents.motherboard) {
+      const caseFormFactor = getSpec(selectedComponents.case, 'formFactor');
+      const moboFormFactor = getSpec(selectedComponents.motherboard, 'formFactor');
+      
+      if (caseFormFactor && moboFormFactor) {
+        const caseFormNorm = caseFormFactor.toLowerCase();
+        const moboFormNorm = moboFormFactor.toLowerCase();
+        
+        // Form factor compatibility matrix
+        const formFactorCompatibility = {
+          'atx': ['atx', 'micro-atx', 'mini-itx'],
+          'micro-atx': ['micro-atx', 'mini-itx'],
+          'mini-itx': ['mini-itx'],
+          'e-atx': ['e-atx', 'atx', 'micro-atx', 'mini-itx']
+        };
+        
+        const supportedForms = formFactorCompatibility[caseFormNorm] || [];
+        const isCompatible = supportedForms.includes(moboFormNorm);
+        
+        if (!isCompatible) {
+          issues.case_motherboard = false;
+          details.case_motherboard = `Case form factor (${caseFormFactor}) does not support motherboard (${moboFormFactor})`;
+        } else {
+          issues.case_motherboard = true;
         }
-      } else if (gpuLength || caseGpuMax) {
+      } else {
+        details.case_motherboard = 'Cannot determine form factor compatibility (missing data)';
+      }
+    }
+
+    // --- GPU-Case Length Compatibility ---
+    if (selectedComponents.gpu && selectedComponents.case) {
+      const gpuLength = getSpec(selectedComponents.gpu, 'length');
+      const caseMaxGpuLength = getSpec(selectedComponents.case, 'gpu_max_length');
+      
+      if (gpuLength && caseMaxGpuLength) {
+        const gpuLengthNum = parseInt(gpuLength);
+        const caseMaxLengthNum = parseInt(caseMaxGpuLength);
+        
+        if (gpuLengthNum > caseMaxLengthNum) {
+          issues.gpu_length = false;
+          details.gpu_length = `GPU length (${gpuLength}mm) exceeds case maximum (${caseMaxGpuLength}mm)`;
+        } else {
+          issues.gpu_length = true;
+        }
+      } else {
         details.gpu_length = 'Cannot determine GPU-case compatibility (missing data)';
       }
     }
 
-    // --- Cooler-Case compatibility ---
+    // --- CPU Cooler-Case Height Compatibility ---
     if (selectedComponents.cooler && selectedComponents.case) {
-      const coolerHeight = getComponentSpec(selectedComponents.cooler, 'height') || getComponentSpec(selectedComponents.cooler, 'max_height');
-      const caseCoolerMax = getComponentSpec(selectedComponents.case, 'cooler_max_height') || getComponentSpec(selectedComponents.case, 'max_cooler_height');
-      if (coolerHeight && caseCoolerMax) {
-        if (Number(coolerHeight) > Number(caseCoolerMax)) {
+      const coolerHeight = getSpec(selectedComponents.cooler, 'height');
+      const caseMaxCoolerHeight = getSpec(selectedComponents.case, 'cooler_max_height');
+      
+      if (coolerHeight && caseMaxCoolerHeight) {
+        const coolerHeightNum = parseInt(coolerHeight);
+        const caseMaxHeightNum = parseInt(caseMaxCoolerHeight);
+        
+        if (coolerHeightNum > caseMaxHeightNum) {
           issues.cooler_height = false;
-          details.cooler_height = `Cooler height (${coolerHeight}mm) exceeds case max cooler height (${caseCoolerMax}mm)`;
+          details.cooler_height = `Cooler height (${coolerHeight}mm) exceeds case maximum (${caseMaxCoolerHeight}mm)`;
+        } else {
+          issues.cooler_height = true;
         }
-      } else if (coolerHeight || caseCoolerMax) {
+      } else {
         details.cooler_height = 'Cannot determine cooler-case compatibility (missing data)';
       }
     }
 
-    // --- Case-Motherboard form factor compatibility ---
-    if (selectedComponents.case && selectedComponents.motherboard) {
-      const caseForm = getComponentSpec(selectedComponents.case, 'formFactor');
-      const moboForm = getComponentSpec(selectedComponents.motherboard, 'formFactor');
-      let fits = false;
-      if (caseForm && moboForm) {
-        const supportedForms = Array.isArray(caseForm)
-          ? caseForm.map(f => f.toLowerCase())
-          : String(caseForm).split(/,|\//).map(f => f.trim().toLowerCase());
-        fits = supportedForms.includes(String(moboForm).toLowerCase());
-        if (!fits) {
-          issues.case_motherboard = false;
-          details.case_motherboard = `Case form factor (${caseForm}) may not fit Motherboard form factor (${moboForm})`;
+    // --- Additional Advanced Checks ---
+    
+    // CPU Cooler Socket Compatibility
+    if (selectedComponents.cooler && selectedComponents.cpu) {
+      const coolerSocket = getSpec(selectedComponents.cooler, 'socket');
+      const cpuSocket = getSpec(selectedComponents.cpu, 'socket');
+      
+      if (coolerSocket && cpuSocket) {
+        const coolerSocketNorm = coolerSocket.toLowerCase();
+        const cpuSocketNorm = cpuSocket.toLowerCase();
+        
+        const socketCompatible = 
+          (coolerSocketNorm.includes('am4') && cpuSocketNorm.includes('am4')) ||
+          (coolerSocketNorm.includes('am5') && cpuSocketNorm.includes('am5')) ||
+          (coolerSocketNorm.includes('lga1200') && cpuSocketNorm.includes('lga1200')) ||
+          (coolerSocketNorm.includes('lga1700') && cpuSocketNorm.includes('lga1700')) ||
+          (coolerSocketNorm.includes('universal') || coolerSocketNorm.includes('all'));
+        
+        if (!socketCompatible) {
+          issues.cooler_socket = false;
+          details.cooler_socket = `CPU cooler socket (${coolerSocket}) not compatible with CPU (${cpuSocket})`;
         } else {
-          issues.case_motherboard = true;
+          issues.cooler_socket = true;
         }
-      } else if (caseForm || moboForm) {
-        details.case_motherboard = 'Cannot determine case-motherboard compatibility (missing data)';
+      }
+    }
+
+    // RAM Speed vs CPU/Motherboard Support
+    if (selectedComponents.ram && selectedComponents.cpu) {
+      const ramSpeed = getSpec(selectedComponents.ram, 'speed');
+      const cpuMaxRamSpeed = getSpec(selectedComponents.cpu, 'max_memory_speed');
+      
+      if (ramSpeed && cpuMaxRamSpeed) {
+        const ramSpeedNum = parseInt(ramSpeed);
+        const cpuMaxSpeedNum = parseInt(cpuMaxRamSpeed);
+        
+        if (ramSpeedNum > cpuMaxSpeedNum) {
+          issues.ram_cpu_speed = false;
+          details.ram_cpu_speed = `RAM speed (${ramSpeed}MHz) exceeds CPU maximum (${cpuMaxRamSpeed}MHz)`;
+        }
       }
     }
 
     setCompatibilityStatus(issues);
     setCompatibilityDetails(details);
-  }, [selectedComponents, getComponentSpec]);
+  }, [selectedComponents]);
 
   // Save to localStorage
   useEffect(() => {
@@ -1016,7 +1367,7 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
     const token = localStorage.getItem('token');
     if (token && !user && typeof setUser === 'function') {
       setUserLoading(true);
-      fetch('/backend/api/index.php?endpoint=profile', {
+      fetch(`${API_BASE}/index.php?endpoint=profile`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -1236,11 +1587,30 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
               </div>
               
               <div className="p-6">
-                <ComponentSelector 
+                {/* Compatibility Comparison Button */}
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => setShowCompatibilityModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      <Filter className="w-4 h-4" />
+                      Compare Compatibility
+                    </button>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Shield className="w-4 h-4" />
+                      <span>Compatibility Score: {compatibilityScore}%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <EnhancedComponentSelector 
+                  key={`ecs-${resetNonce}-${getCurrentCategory().key}`}
                   selectedComponents={selectedComponents}
                   onComponentSelect={handleComponentSelect}
                   onComponentRemove={handleComponentRemove}
                   activeCategory={getCurrentCategory().key}
+                  prefetchedComponents={allComponents}
                   recommendations={recommendations[getCurrentCategory().key] || []}
                   loadingRecommendations={loadingRecommendations[getCurrentCategory().key] || false}
                   compatibilityIssues={getCompatibilitySuggestions(getCurrentCategory().key) || []}
@@ -1492,22 +1862,22 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
                   <div className="text-center text-sm mt-4 p-3 rounded-lg">
                     {getCompatibilityScore() === 100 ? (
                       <div className="text-green-600 bg-green-50">
-                        <p className="font-medium">✅ Ready to proceed with your build!</p>
+                        <p className="font-medium">Ready to proceed with your build!</p>
                         {!selectedComponents.cooler && (
                           <p className="text-yellow-600 mt-1 text-xs">
-                            💡 Consider adding an aftermarket cooler for better performance
+                            Consider adding an aftermarket cooler for better performance
                           </p>
                         )}
                       </div>
                     ) : (
                       <div className="text-orange-600 bg-orange-50">
-                        <p className="font-medium">⚠️ Build ready with compatibility warnings</p>
+                        <p className="font-medium">Build ready with compatibility warnings</p>
                         <p className="text-xs mt-1">
                           Your build can be completed, but consider reviewing the warnings above for optimal performance
                         </p>
                         {!selectedComponents.cooler && (
                           <p className="text-yellow-600 mt-1 text-xs">
-                            💡 Consider adding an aftermarket cooler for better performance
+                            Consider adding an aftermarket cooler for better performance
                           </p>
                         )}
                       </div>
@@ -1523,29 +1893,38 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
       {/* Save Build Modal */}
       {showSaveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl">
+          <div className="bg-white rounded-xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Save className="w-5 h-5 text-blue-600" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <Save className="w-6 h-6 text-white" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
                   {isEditing ? 'Update Your Build' : 'Save Your Build'}
                 </h2>
+                    <p className="text-sm text-gray-600">Save your PC configuration for future reference</p>
+                  </div>
               </div>
               <button
                 onClick={() => setShowSaveModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5" />
+                  <X className="w-6 h-6" />
               </button>
+              </div>
             </div>
 
             {/* Content */}
             <div className="p-6">
-              <div className="mb-6">
-                <label htmlFor="build-name" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Build Details */}
+                <div className="space-y-6">
+                  {/* Build Name */}
+                  <div>
+                    <label htmlFor="build-name" className="block text-sm font-semibold text-gray-700 mb-2">
                   Build Name *
                 </label>
                 <input
@@ -1554,16 +1933,19 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
                   value={buildName}
                   onChange={(e) => setBuildName(e.target.value)}
                   placeholder="e.g., Gaming Beast Pro, Workstation Build"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                        buildName.trim() === '' ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                      }`}
                   maxLength={50}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {buildName.length}/50 characters
+                    <p className={`text-xs mt-2 ${buildName.trim() === '' ? 'text-red-500' : 'text-gray-500'}`}>
+                      {buildName.length}/50 characters {buildName.trim() === '' && '(Required)'}
                 </p>
               </div>
 
-              <div className="mb-6">
-                <label htmlFor="build-description" className="block text-sm font-medium text-gray-700 mb-2">
+                  {/* Build Description */}
+                  <div>
+                    <label htmlFor="build-description" className="block text-sm font-semibold text-gray-700 mb-2">
                   Description (Optional)
                 </label>
                 <textarea
@@ -1571,93 +1953,166 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
                   value={buildDescription}
                   onChange={(e) => setBuildDescription(e.target.value)}
                   placeholder="Describe your build, intended use, or any special features..."
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      rows="4"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none transition-colors"
                   maxLength={200}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-2">
                   {buildDescription.length}/200 characters
                 </p>
               </div>
 
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Build Visibility
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-sm ${isPublic ? 'text-green-600' : 'text-gray-500'}`}>
+                  {/* Build Visibility Section */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Build Visibility</h3>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Your build will be visible to other users in the Community Builds section. You can change this later.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-sm font-medium ${isPublic ? 'text-green-600' : 'text-gray-500'}`}>
                       {isPublic ? 'Public' : 'Private'}
                     </span>
                     <button
                       type="button"
                       onClick={() => setIsPublic(!isPublic)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        isPublic ? 'bg-green-600' : 'bg-gray-200'
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${
+                            isPublic ? 'bg-green-600' : 'bg-gray-300'
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
                           isPublic ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">
-                  {isPublic 
-                    ? 'Your build will be visible to other users in the Community Builds section. You can change this later.'
-                    : 'Your build will be private and only visible to you. You can make it public later.'
-                  }
-                </p>
               </div>
 
-              {/* Build Summary */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">Build Summary</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Components:</span>
-                    <span className="font-medium">{getSelectedRequiredComponentsCount()}/{getRequiredComponentsCount()} selected</span>
+                  {/* Community Submission Section - Always On */}
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1 p-2 bg-blue-100 rounded-full">
+                        <Users className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="block text-sm font-semibold text-gray-900 mb-1">
+                          Community Review Required
+                        </h3>
+                        <p className="text-sm text-gray-700 mb-3">
+                          All builds are submitted for admin review to ensure quality. Your build will be 
+                          reviewed before being featured in the Community Builds section.
+                        </p>
+                        <div className="p-3 bg-blue-100 border border-blue-300 rounded-lg">
+                          <div className="flex items-center gap-2 text-sm text-blue-800 mb-1">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="font-medium">Review Required</span>
+                          </div>
+                          <p className="text-xs text-blue-700">
+                            Your build will be reviewed by our team. You'll be notified once it's approved or if any changes are needed.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Compatibility:</span>
-                    <span className="font-medium text-green-600">{getCompatibilityScore()}%</span>
+              </div>
+
+                {/* Right Column - Build Summary */}
+                <div className="space-y-6">
+                  {/* Build Summary Card */}
+                  <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Package className="w-5 h-5 text-green-600" />
+                      Build Summary
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Package className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Price:</span>
-                    <span className="font-medium text-green-600">₱{getTotalPrice().toLocaleString()}</span>
+                          <span className="text-sm font-medium text-gray-700">Components</span>
                   </div>
+                        <span className="text-lg font-bold text-blue-600">
+                          {getSelectedRequiredComponentsCount()}/{getRequiredComponentsCount()}
+                        </span>
+                  </div>
+                      
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
                 </div>
+                          <span className="text-sm font-medium text-gray-700">Compatibility</span>
+                        </div>
+                        <span className="text-lg font-bold text-green-600">
+                          {getCompatibilityScore()}%
+                        </span>
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowSaveModal(false)}
-                  className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
+                                             <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                         <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                             <span className="text-lg font-bold text-purple-600">₱</span>
+                           </div>
+                           <span className="text-sm font-medium text-gray-700">Total Price</span>
+                         </div>
+                         <span className="text-lg font-bold text-purple-600">
+                           {getTotalPrice().toLocaleString()}
+                         </span>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Compatibility Status */}
+                  {getCompatibilityScore() < 100 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                        <span className="text-sm font-semibold text-yellow-800">Compatibility Notice</span>
+                      </div>
+                      <p className="text-xs text-yellow-700">
+                        Your build has some compatibility warnings. Consider reviewing the compatibility checker for optimal performance.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
                 <button
                   onClick={handleSaveBuild}
-                  className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-white text-lg transition-colors shadow-sm
-                  ${hasCriticalCompatibilityIssues ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                  disabled={hasCriticalCompatibilityIssues || savingBuild}
-                  title={hasCriticalCompatibilityIssues ? 'Cannot save build due to compatibility issues.' : 'Save your build'}
+                      disabled={!buildName.trim() || hasCriticalCompatibilityIssues || savingBuild}
+                      className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-white text-lg transition-all duration-200 shadow-lg ${
+                        !buildName.trim() || hasCriticalCompatibilityIssues
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 hover:shadow-xl transform hover:scale-[1.02]'
+                      }`}
+                      title={!buildName.trim() ? 'Please enter a build name' : hasCriticalCompatibilityIssues ? 'Cannot save build due to compatibility issues' : 'Save your build'}
                 >
                   {savingBuild ? (
                     <>
-                      <span className="animate-spin inline-block mr-2"><svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg></span>
-                      Saving...
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <span>Saving...</span>
                     </>
                   ) : (
                     <>
                       <Save className="w-5 h-5" />
-                      {isEditing ? 'Update Build' : 'Save Build'}
+                          <span>{isEditing ? 'Update Build' : 'Save Build'}</span>
                     </>
                   )}
                 </button>
+                    
+                    <button
+                      onClick={() => setShowSaveModal(false)}
+                      className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1753,6 +2208,16 @@ const PCAssembly = ({ setCurrentPage, selectedComponents: prebuiltComponents, se
           </div>
         </div>
       )}
+
+      {/* Compatibility Comparison Modal */}
+      <CompatibilityComparisonModal
+        isOpen={showCompatibilityModal}
+        onClose={() => setShowCompatibilityModal(false)}
+        selectedComponents={selectedComponents}
+        currentCategory={getCurrentCategory().key}
+        allComponents={allComponents}
+        onComponentSelect={handleComponentSelect}
+      />
     </div>
   )
 }

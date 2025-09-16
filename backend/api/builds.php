@@ -85,7 +85,8 @@ function handleCreateBuild($pdo) {
         ");
         
         $componentsJson = json_encode($input['components']);
-        $isPublic = isset($input['is_public']) ? ($input['is_public'] ? 1 : 0) : 0;
+        // Allow users to set public flag, but it will be reviewed by admins
+        $isPublic = isset($input['is_public']) ? (int)$input['is_public'] : 0;
         
         $stmt->execute([
             $userId,
@@ -225,22 +226,14 @@ function handleTogglePublicBuild($pdo) {
             return;
         }
         
-        // Toggle the public status
-        $newPublicStatus = $build['is_public'] ? 0 : 1;
-        
-        $stmt = $pdo->prepare("
-            UPDATE user_builds 
-            SET is_public = ?, updated_at = NOW()
-            WHERE id = ? AND user_id = ?
-        ");
-        
-        $stmt->execute([$newPublicStatus, $buildId, $userId]);
-        
-        echo json_encode([
-            'success' => true,
-            'message' => $newPublicStatus ? 'Build made public successfully' : 'Build made private successfully',
-            'is_public' => $newPublicStatus
-        ]);
+        // New rule: Users can only make builds private. To share publicly, submit for admin approval.
+        if ((int)$build['is_public'] === 1) {
+            $stmt = $pdo->prepare("UPDATE user_builds SET is_public = 0, updated_at = NOW() WHERE id = ? AND user_id = ?");
+            $stmt->execute([$buildId, $userId]);
+            echo json_encode(['success' => true, 'message' => 'Build made private successfully', 'is_public' => 0]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'To make this build public, submit it to Community for admin approval.']);
+        }
         
     } catch (Exception $e) {
         http_response_code(500);

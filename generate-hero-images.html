@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Hero Images</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .image-container {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto 10px;
+        }
+        .download-btn {
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .download-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hero Image Generator</h1>
+    <p>Right-click on each image and select "Save image as..." to download them to your <code>public/images/hero/</code> directory.</p>
+    
+    <div class="image-container">
+        <h2>PC Build</h2>
+        <canvas id="pc-build" width="1920" height="1080"></canvas>
+        <a id="dl-pc-build" class="download-btn" download="pc-build.jpg">Download PC Build Image</a>
+    </div>
+    
+    <div class="image-container">
+        <h2>Components</h2>
+        <canvas id="components" width="1920" height="1080"></canvas>
+        <a id="dl-components" class="download-btn" download="components.jpg">Download Components Image</a>
+    </div>
+    
+    <div class="image-container">
+        <h2>Support</h2>
+        <canvas id="support" width="1920" height="1080"></canvas>
+        <a id="dl-support" class="download-btn" download="support.jpg">Download Support Image</a>
+    </div>
+    
+    <div class="image-container">
+        <h2>Performance</h2>
+        <canvas id="performance" width="1920" height="1080"></canvas>
+        <a id="dl-performance" class="download-btn" download="performance.jpg">Download Performance Image</a>
+    </div>
+
+    <script>
+        // Function to generate a random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Function to generate an image
+        function generateImage(canvasId, text, bgColor) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Fill background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add some visual interest
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            for (let i = 0; i < 10; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const radius = Math.random() * 200 + 100;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Add text
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
+            
+            return canvas.toDataURL('image/jpeg');
+        }
+
+        // Generate and set up download links
+        const images = [
+            { id: 'pc-build', text: 'PC Build', color: '#1e40af' },
+            { id: 'components', text: 'Components', color: '#4c1d95' },
+            { id: 'support', text: 'Support', color: '#065f46' },
+            { id: 'performance', text: 'Performance', color: '#991b1b' }
+        ];
+
+        images.forEach(img => {
+            const dataUrl = generateImage(img.id, img.text, img.color);
+            const link = document.getElementById(`dl-${img.id}`);
+            link.href = dataUrl;
+        });
+    </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE } from '../../utils/apiBase';
 
 const Login = ({ onLogin, onSwitchToRegister }) => {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -15,7 +16,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/backend/api/index.php?endpoint=login', {
+      const res = await fetch(`${API_BASE}/index.php?endpoint=login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -25,7 +26,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
         localStorage.setItem('token', data.token);
         // Fetch user profile after login to get full user info
         try {
-          const profileRes = await fetch('/backend/api/index.php?endpoint=profile', {
+          const profileRes = await fetch(`${API_BASE}/index.php?endpoint=profile`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${data.token}`

@@ -46,13 +46,11 @@ const TopNavigation = ({ currentPage, onPageChange, user, onLogout, onSuperAdmin
     { id: 'home', name: 'HOME', icon: <Home className="w-4 h-4" /> },
     { id: 'prebuilt-pcs', name: 'PREBUILT PCS', icon: <Package className="w-4 h-4" /> },
     { id: 'pc-assembly', name: 'BUILD A PC', icon: <Cpu className="w-4 h-4" /> },
-    { id: 'public-builds', name: 'COMMUNITY', icon: <Users className="w-4 h-4" /> },
   ]
 
   const userMenuItems = user ? [
     ...(user.roles?.includes('Client') ? [
       { id: 'my-builds', name: 'My Builds', icon: <Package className="w-4 h-4" /> },
-      { id: 'public-builds', name: 'Community Builds', icon: <Users className="w-4 h-4" /> },
       { id: 'my-orders', name: 'My Orders', icon: <FileText className="w-4 h-4" /> },
       { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="w-4 h-4" /> },
       { id: 'notifications', name: 'Notifications', icon: <Bell className="w-4 h-4" />, badge: unreadCount },
@@ -189,9 +187,9 @@ const TopNavigation = ({ currentPage, onPageChange, user, onLogout, onSuperAdmin
                         handleLogout()
                         setIsUserMenuOpen(false)
                       }}
-                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200 group"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
                       <span>Logout</span>
                     </button>
                   </div>

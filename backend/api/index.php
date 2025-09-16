@@ -49,8 +49,10 @@ function normalizeComponent(&$component) {
     else if (!empty($component['type'])) $socket = strtolower($component['type']);
     else if (!empty($component['model'])) $socket = strtolower($component['model']);
     else if (!empty($component['name'])) $socket = strtolower($component['name']);
-    if (strpos($socket, 'am4') !== false) $component['socket'] = 'AM4';
-    else if (strpos($socket, 'am5') !== false) $component['socket'] = 'AM5';
+    // Be tolerant of common typos and formatting: amd4 => AM4, amd5 => AM5, am-4 => AM4, etc.
+    $socket_norm = str_replace([' ', '-', '_'], '', $socket);
+    if (strpos($socket_norm, 'am4') !== false || strpos($socket_norm, 'amd4') !== false) $component['socket'] = 'AM4';
+    else if (strpos($socket_norm, 'am5') !== false || strpos($socket_norm, 'amd5') !== false) $component['socket'] = 'AM5';
     else if (strpos($socket, 'lga1200') !== false) $component['socket'] = 'LGA1200';
     else if (strpos($socket, 'lga1700') !== false) $component['socket'] = 'LGA1700';
     // Also check specs if present
@@ -62,15 +64,239 @@ function normalizeComponent(&$component) {
             $component['socket'] = $component['specs']->socket;
         }
     }
+    // Re-normalize socket if it was filled from specs
+    if (!empty($component['socket'])) {
+        $s = strtolower($component['socket']);
+        // strip spaces, hyphens, underscores before matching
+        $s_clean = str_replace([' ', '-', '_'], '', $s);
+        if (strpos($s_clean, 'am4') !== false || strpos($s_clean, 'amd4') !== false) $component['socket'] = 'AM4';
+        else if (strpos($s_clean, 'am5') !== false || strpos($s_clean, 'amd5') !== false) $component['socket'] = 'AM5';
+        else if (strpos($s, 'lga1200') !== false) $component['socket'] = 'LGA1200';
+        else if (strpos($s, 'lga1700') !== false) $component['socket'] = 'LGA1700';
+        else if (strpos($s, 'lga1151') !== false) $component['socket'] = 'LGA1151';
+        else if (strpos($s, 'lga2066') !== false) $component['socket'] = 'LGA2066';
+    }
+
+    // Normalize form factor
+    $ff = '';
+    if (!empty($component['form_factor'])) $ff = strtolower(trim($component['form_factor']));
+    else if (isset($component['specs']) && is_object($component['specs']) && !empty($component['specs']->form_factor)) {
+        $ff = strtolower(trim($component['specs']->form_factor));
+    }
+    if (!empty($ff)) {
+        $ff = str_replace(['_', ' '], '-', $ff);
+        if (in_array($ff, ['micro-atx','matx','m-atx','u-atx','uatx','microatx'])) $component['form_factor'] = 'Micro-ATX';
+        else if (in_array($ff, ['mini-itx','mitx','miniitx'])) $component['form_factor'] = 'Mini-ITX';
+        else if (in_array($ff, ['e-atx','eatx'])) $component['form_factor'] = 'E-ATX';
+        else if (strpos($ff, 'micro') !== false && strpos($ff, 'atx') !== false) $component['form_factor'] = 'Micro-ATX';
+        else if (strpos($ff, 'mini') !== false && strpos($ff, 'itx') !== false) $component['form_factor'] = 'Mini-ITX';
+        else if (strpos($ff, 'atx') !== false) $component['form_factor'] = 'ATX';
+    }
+}
+
+// --- Component CRUD (Admin/Super Admin) ---
+function requireAdminOrSuperAdmin() {
+    $token = getBearerToken();
+    if (!$token) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        exit;
+    }
+    $decoded = verifyJWT($token);
+    if (!$decoded) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Invalid or expired token']);
+        exit;
+    }
+    $roles = $decoded['roles'] ?? [];
+    if (is_string($roles)) $roles = explode(',', $roles);
+    if (!(in_array('Admin', $roles) || in_array('Super Admin', $roles))) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Insufficient permissions']);
+        exit;
+    }
+    return (object)$decoded;
+}
+
+function handleCreateComponent($pdo) {
+    requireAdminOrSuperAdmin();
+    $input = json_decode(file_get_contents('php://input'), true);
+    $name = trim($input['name'] ?? '');
+    $category_id = isset($input['category_id']) ? (int)$input['category_id'] : 0;
+    $brand = isset($input['brand']) ? trim($input['brand']) : null;
+    $price = isset($input['price']) ? (float)$input['price'] : 0.0;
+    $stock_quantity = isset($input['stock_quantity']) ? (int)$input['stock_quantity'] : 0;
+
+    if ($name === '' || $category_id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Missing or invalid name/category_id']);
+        return;
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO components (name, category_id, brand, price, stock_quantity) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$name, $category_id, $brand, $price, $stock_quantity]);
+
+    $id = (int)$pdo->lastInsertId();
+    // Return created component data
+    $fetch = $pdo->prepare("SELECT * FROM components WHERE id = ?");
+    $fetch->execute([$id]);
+    $component = $fetch->fetch(PDO::FETCH_ASSOC);
+
+    echo json_encode(['success' => true, 'data' => $component]);
+}
+
+function handleUpdateComponent($pdo) {
+    requireAdminOrSuperAdmin();
+    $input = json_decode(file_get_contents('php://input'), true);
+    $id = isset($input['id']) ? (int)$input['id'] : 0;
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+
+    $fields = [];
+    $values = [];
+    $allowed = ['name', 'category_id', 'brand', 'price', 'stock_quantity'];
+    foreach ($allowed as $f) {
+        if (array_key_exists($f, $input)) {
+            $fields[] = "$f = ?";
+            $values[] = $input[$f];
+        }
+    }
+    if (empty($fields)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'No fields to update']);
+        return;
+    }
+    $values[] = $id;
+    $sql = 'UPDATE components SET ' . implode(', ', $fields) . ' WHERE id = ?';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($values);
+
+    // Return updated component
+    $fetch = $pdo->prepare("SELECT * FROM components WHERE id = ?");
+    $fetch->execute([$id]);
+    $component = $fetch->fetch(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'data' => $component]);
+}
+
+function handleDeleteComponent($pdo) {
+    requireAdminOrSuperAdmin();
+    $input = json_decode(file_get_contents('php://input'), true);
+    $id = isset($input['id']) ? (int)$input['id'] : 0;
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid id']);
+        return;
+    }
+
+    // Soft delete: mark as inactive
+    $stmt = $pdo->prepare("UPDATE components SET is_active = 0 WHERE id = ?");
+    $stmt->execute([$id]);
+
+    echo json_encode(['success' => true]);
+}
+
+// --- User Management Functions ---
+function handleGetUsers($pdo) {
+    // Verify admin access
+    $token = getBearerToken();
+    if (!$token) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        return;
+    }
+
+    try {
+        // Verify token and get user data
+        $decoded = verifyJwtToken($token);
+        if (!$decoded) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Invalid or expired token']);
+            return;
+        }
+
+        // Check if user has admin privileges
+        $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt->execute([$decoded->user_id]);
+        $user = $stmt->fetch();
+
+        if (!$user || !in_array(strtolower($user['role']), ['admin', 'super admin'])) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Insufficient permissions']);
+            return;
+        }
+
+        // Fetch all users except the current user
+        $stmt = $pdo->prepare("SELECT id, username, email, role, is_active, last_login, 
+                              can_access_inventory, can_access_orders, can_access_chat_support 
+                              FROM users WHERE id != ?");
+        $stmt->execute([$decoded->user_id]);
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Format the response
+        $formattedUsers = array_map(function($user) {
+            return [
+                'id' => $user['id'],
+                'username' => $user['username'],
+                'email' => $user['email'],
+                'role' => strtolower($user['role']),
+                'is_active' => (bool)$user['is_active'],
+                'last_login' => $user['last_login'],
+                'can_access_inventory' => (bool)$user['can_access_inventory'],
+                'can_access_orders' => (bool)$user['can_access_orders'],
+                'can_access_chat_support' => (bool)$user['can_access_chat_support']
+            ];
+        }, $users);
+
+        echo json_encode(['success' => true, 'data' => $formattedUsers]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Failed to fetch users: ' . $e->getMessage()]);
+    }
 }
 
 // --- component functions ---
 function handleGetComponents($pdo) {
     $categoryName = $_GET['category'] ?? '';
     if (empty($categoryName)) {
+        // Debug: missing category param
+        error_log("handleGetComponents: missing 'category' query parameter");
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Category not specified']);
         return;
+    }
+
+    // Debug: log requested category
+    error_log("handleGetComponents: requested category='" . $categoryName . "'");
+
+    // Normalize legacy/alias category labels to canonical names used in DB
+    $aliases = [
+        'procie only'   => 'CPU',
+        'processor'     => 'CPU',
+        'cpu'           => 'CPU',
+        'mobo'          => 'Motherboard',
+        'motherboard'   => 'Motherboard',
+        'gpu'           => 'GPU',
+        'graphics card' => 'GPU',
+        'ram 3200mhz'   => 'RAM',
+        'memory'        => 'RAM',
+        'ssd nvme'      => 'Storage',
+        'storage'       => 'Storage',
+        'psu - tr'      => 'PSU',
+        'power supply'  => 'PSU',
+        'psu'           => 'PSU',
+        'case gaming'   => 'Case',
+        'case'          => 'Case',
+        'aio'           => 'Cooler',
+        'cooling'       => 'Cooler',
+        'cooler'        => 'Cooler',
+    ];
+    $key = strtolower(trim($categoryName));
+    if (isset($aliases[$key])) {
+        $categoryName = $aliases[$key];
+        error_log("handleGetComponents: normalized category to '" . $categoryName . "'");
     }
 
     // find the category ID from the name, case-insensitively
@@ -79,15 +305,34 @@ function handleGetComponents($pdo) {
     $category = $stmt->fetch();
 
     if (!$category) {
+        // Debug: log available categories for quick inspection
+        try {
+            $available = $pdo->query("SELECT name FROM component_categories ORDER BY name ASC")
+                              ->fetchAll(PDO::FETCH_COLUMN);
+            error_log("handleGetComponents: category not found: '" . $categoryName . "'. Available: " . implode(', ', $available));
+        } catch (Throwable $t) {
+            error_log("handleGetComponents: failed to list available categories: " . $t->getMessage());
+            $available = [];
+        }
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Category not found']);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Category not found',
+            'debug' => [
+                'requested_category' => $categoryName,
+                'available_categories' => $available
+            ]
+        ]);
         return;
     }
 
-    // grab all components for that category
-    $stmt = $pdo->prepare("SELECT * FROM components WHERE category_id = ?");
+    // grab all active components for that category
+    $stmt = $pdo->prepare("SELECT * FROM components WHERE category_id = ? AND (is_active IS NULL OR is_active = 1)");
     $stmt->execute([$category['id']]);
     $components = $stmt->fetchAll();
+
+    // Debug: log count
+    error_log("handleGetComponents: category_id=" . $category['id'] . ", component_count=" . count($components));
 
     // decode specs JSON string into an object for each component and normalize
     foreach ($components as &$component) {
@@ -182,9 +427,45 @@ switch ($endpoint) {
         }
         break;
 
+    case 'get_users':
+        if ($method === 'GET') {
+            handleGetUsers($pdo);
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
     case 'components':
         if ($method === 'GET') {
             handleGetComponents($pdo);
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
+    case 'create_component':
+        if ($method === 'POST') {
+            handleCreateComponent($pdo);
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
+    case 'update_component':
+        if ($method === 'POST') {
+            handleUpdateComponent($pdo);
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
+    case 'delete_component':
+        if ($method === 'POST') {
+            handleDeleteComponent($pdo);
         } else {
             http_response_code(405);
             echo json_encode(['error' => 'Method Not Allowed']);

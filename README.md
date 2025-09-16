@@ -19,6 +19,7 @@ A modern **desktop-only** web application for building custom PCs with real-time
 - **Chat Support**: Real-time chat support with customer service representatives
 - **Notifications**: Real-time notifications for order updates and system alerts
 - **User Profiles**: Manage personal information and preferences
+- **One-Click Clear**: Instantly reset your build with a single click, clearing all selected components and compatibility data
 - **FAQ Section**: Comprehensive help and support information
 
 ### For Administrators & Employees
@@ -111,6 +112,14 @@ The React application will be available at `http://localhost:5175` (or the port 
 #### Backend Files
 1. Ensure the `backend` folder is in your XAMPP `htdocs` directory
 2. The API will be available at `http://localhost/backend/api/`
+
+## Recent Improvements
+
+### v1.1.0 - 2024-09-16
+- **Enhanced Clear Functionality**
+  - One-click clearing of all selected components
+  - Automatic reset of compatibility checks and recommendations
+  - Clean slate for new builds with proper state management
 
 ### 4. Configuration
 
@@ -391,6 +400,10 @@ The application uses a comprehensive database schema with:
 - **Enhanced Chat Support System**: Implemented comprehensive real-time chat functionality with:
   - Guest user support
   - Priority management (low, normal, high, urgent)
+  
+- **Improved Build Management**:
+  - One-click clear functionality for starting new builds
+  - Better state management for component selection
   - Session tracking and resolution
   - Real-time statistics dashboard
   - Quick question suggestions
@@ -402,7 +415,16 @@ The application uses a comprehensive database schema with:
 - **Better User Experience**: More intuitive chat interface with floating button
 - **Admin Efficiency**: Advanced chat management tools for support staff
 - **System Reliability**: Enhanced error handling and data persistence
-- **Documentation**: Complete setup and troubleshooting guides
+- **Case Compatibility**: Ensures components fit within the selected case
+
+### Build Management
+- **One-Click Clear**: Quickly reset your build with a single click
+  - Removes all selected components
+  - Resets compatibility checks and recommendations
+  - Clears any saved build data
+  - Returns to the first assembly step
+
+## Troubleshooting guides
 
 ## License
 

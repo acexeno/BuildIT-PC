@@ -31,8 +31,8 @@ function handleGetDashboardData($pdo) {
         // Initialize data structure
         $data = [];
 
-        // Fetch data based on role
-        if (in_array('Super Admin', $roles)) {
+        // For all admin roles, grant full access
+        if (in_array('Super Admin', $roles) || in_array('Admin', $roles) || in_array('Employee', $roles)) {
             // Fetch all users with their roles as a comma-separated string
             $stmt = $pdo->query("
                 SELECT u.*, GROUP_CONCAT(r.name) as roles
@@ -42,19 +42,13 @@ function handleGetDashboardData($pdo) {
                 GROUP BY u.id
             ");
             $data['users'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
             try {
                 $data['system_stats'] = get_system_stats($pdo);
             } catch (Exception $e) {
                 throw $e;
             }
-            $data['inventory'] = pdo_get_all($pdo, 'components');
-            $data['orders'] = pdo_get_all($pdo, 'orders');
-            $data['reports'] = get_reports_data($pdo);
-        } elseif (in_array('Admin', $roles)) {
-            $data['inventory'] = pdo_get_all($pdo, 'components');
-            $data['orders'] = pdo_get_all($pdo, 'orders');
-            $data['reports'] = get_reports_data($pdo);
-        } elseif (in_array('Employee', $roles)) {
+            
             $data['inventory'] = pdo_get_all($pdo, 'components');
             $data['orders'] = pdo_get_all($pdo, 'orders');
             $data['reports'] = get_reports_data($pdo);
@@ -76,7 +70,11 @@ function handleGetDashboardData($pdo) {
 
 // A generic function to get all records from a table
 function pdo_get_all($pdo, $table) {
-    $stmt = $pdo->query("SELECT * FROM $table");
+    if ($table === 'components') {
+        $stmt = $pdo->query("SELECT * FROM components WHERE is_active = 1");
+    } else {
+        $stmt = $pdo->query("SELECT * FROM $table");
+    }
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -93,7 +91,35 @@ function get_system_stats($pdo) {
 // Function to get data for reports
 function get_reports_data($pdo) {
     $reports = [];
-    // Monthly sales (existing)
+    
+    // Check if we have any orders
+    $hasOrders = (int)$pdo->query("SELECT COUNT(*) FROM orders")->fetchColumn() > 0;
+    
+    
+    
+    // Weekly sales (last 12 weeks)
+    $stmt = $pdo->query("SELECT 
+        YEARWEEK(order_date, 1) as week_number,
+        MIN(DATE(order_date)) as week_start,
+        MAX(DATE(order_date)) as week_end,
+        SUM(total_price) as total_sales
+        FROM orders 
+        WHERE status = 'Completed' AND order_date >= DATE_SUB(CURDATE(), INTERVAL 12 WEEK)
+        GROUP BY week_number
+        ORDER BY week_number DESC");
+    $weeklyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Format weekly data for the frontend
+    $reports['weekly_sales'] = array_map(function($week) {
+        return [
+            'week' => 'Week ' . substr($week['week_number'], 4) . 
+                     ' (' . date('M d', strtotime($week['week_start'])) . ' - ' . 
+                     date('M d', strtotime($week['week_end'])) . ')',
+            'total_sales' => (float)$week['total_sales']
+        ];
+    }, $weeklyData);
+    
+    // Monthly sales (last 12 months)
     $stmt = $pdo->query("SELECT 
         DATE_FORMAT(order_date, '%Y-%m') as month, 
         SUM(total_price) as total_sales 
@@ -104,6 +130,10 @@ function get_reports_data($pdo) {
         LIMIT 12");
     $reports['monthly_sales'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    
+    
+    
+
     // Daily sales (last 30 days)
     $stmt = $pdo->query("SELECT 
         DATE(order_date) as day, 
@@ -113,6 +143,8 @@ function get_reports_data($pdo) {
         GROUP BY day 
         ORDER BY day DESC");
     $reports['daily_sales'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    
 
     // Top-selling products (by quantity and revenue)
     $stmt = $pdo->query("SELECT c.id, c.name, SUM(oi.quantity) as total_quantity, SUM(oi.price * oi.quantity) as total_revenue
@@ -124,6 +156,8 @@ function get_reports_data($pdo) {
         ORDER BY total_quantity DESC
         LIMIT 10");
     $reports['top_selling_products'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    
 
     // Revenue per category
     $stmt = $pdo->query("SELECT cat.name as category, SUM(oi.price * oi.quantity) as total_revenue
@@ -135,6 +169,8 @@ function get_reports_data($pdo) {
         GROUP BY cat.id, cat.name
         ORDER BY total_revenue DESC");
     $reports['revenue_per_category'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    
 
     // Revenue per brand
     $stmt = $pdo->query("SELECT c.brand, SUM(oi.price * oi.quantity) as total_revenue
@@ -145,18 +181,33 @@ function get_reports_data($pdo) {
         GROUP BY c.brand
         ORDER BY total_revenue DESC");
     $reports['revenue_per_brand'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    
 
     // Deadstock detection (stock > 0, no sales in last X days)
     $period = isset($_GET['period']) && is_numeric($_GET['period']) ? intval($_GET['period']) : 90;
     if ($period < 1) $period = 90;
-    $stmt = $pdo->query("SELECT c.id, c.name, c.stock_quantity, c.price, MAX(o.order_date) as last_sold_date
+    $stmt = $pdo->query("SELECT 
+        c.id, 
+        c.name, 
+        c.stock_quantity, 
+        c.price, 
+        (c.price * c.stock_quantity) as total_value,
+        MAX(o.order_date) as last_sold_date
         FROM components c
         LEFT JOIN order_items oi ON c.id = oi.component_id
         LEFT JOIN orders o ON oi.order_id = o.id AND o.status = 'Completed'
         WHERE c.stock_quantity > 0
         GROUP BY c.id, c.name, c.stock_quantity, c.price
         HAVING (MAX(o.order_date) IS NULL OR MAX(o.order_date) < DATE_SUB(CURDATE(), INTERVAL $period DAY))");
-    $reports['deadstock'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $deadstockItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $totalDeadstockValue = array_sum(array_column($deadstockItems, 'total_value'));
+    
+    $reports['deadstock'] = $deadstockItems;
+    $reports['deadstock_total_value'] = $totalDeadstockValue;
+    
+    
 
     // Stock movement (sales out per product, last 30 days)
     $stmt = $pdo->query("SELECT c.id, c.name, SUM(oi.quantity) as sold_last_30_days
@@ -167,14 +218,29 @@ function get_reports_data($pdo) {
         GROUP BY c.id, c.name
         ORDER BY sold_last_30_days DESC");
     $reports['stock_movement'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    
 
     // Order status breakdown
     $stmt = $pdo->query("SELECT status, COUNT(*) as count FROM orders GROUP BY status");
     $reports['order_status_breakdown'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    
 
     // Average order value (completed orders)
     $stmt = $pdo->query("SELECT AVG(total_price) as avg_order_value FROM orders WHERE status = 'Completed'");
-    $reports['average_order_value'] = $stmt->fetch(PDO::FETCH_ASSOC);
+    $avgOrderValue = $stmt->fetch(PDO::FETCH_ASSOC);
+    $reports['average_order_value'] = $avgOrderValue;
+    
+    
+    
+    // Add total sales and total orders for the dashboard
+    $reports['total_sales'] = array_sum(array_column($reports['monthly_sales'], 'total_sales'));
+    $reports['total_orders'] = array_sum(array_column($reports['order_status_breakdown'], 'count'));
+    
+    
 
     return $reports;
-} 
+}
+
+ 

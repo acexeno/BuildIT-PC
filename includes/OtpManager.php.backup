@@ -1,0 +1,255 @@
+<?php
+
+namespace App\Services;
+
+use PDO;
+use PDOException;
+use Exception;
+
+class OtpManager
+{
+    private $db;
+    private $config;
+    private $expiryMinutes = 10; // OTP expiry time in minutes
+    private $maxAttempts = 5;    // Maximum OTP attempts
+
+    public function __construct($dbConnection, $config = [])
+    {
+        $this->db = $dbConnection;
+        $this->config = array_merge([
+            'otp_length' => 6,
+            'resend_timeout' => 60, // seconds
+            'max_attempts' => 5,
+            'expiry_minutes' => 10
+        ], $config);
+    }
+
+    /**
+     * Generate a new OTP for the given email
+     */
+    public function generateOtp($email, $ipAddress = null, $userAgent = null)
+    {
+        try {
+            // Check rate limiting
+            if ($this->isRateLimited($email, $ipAddress)) {
+                throw new Exception('Too many OTP requests. Please try again later.');
+            }
+
+            // Invalidate any existing OTPs for this email
+            $this->invalidateExistingOtps($email);
+
+            // Generate OTP
+            $otp = $this->generateRandomOtp($this->config['otp_length']);
+            $token = bin2hex(random_bytes(32));
+            $expiresAt = new DateTime();
+            $expiresAt->modify("+{$this->config['expiry_minutes']} minutes");
+
+            // Store in database
+            $stmt = $this->db->prepare(
+                "INSERT INTO otps (email, otp, token, expires_at, ip_address, user_agent) 
+                 VALUES (:email, :otp, :token, :expires_at, :ip_address, :user_agent)"
+            );
+
+            $stmt->execute([
+                ':email' => $email,
+                ':otp' => $otp,
+                ':token' => $token,
+                ':expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+                ':ip_address' => $ipAddress,
+                ':user_agent' => $userAgent
+            ]);
+
+            return [
+                'otp' => $otp, // For testing, remove in production
+                'token' => $token,
+                'expires_at' => $expiresAt->format('c')
+            ];
+        } catch (PDOException $e) {
+            error_log("OTP Generation Error: " . $e->getMessage());
+            throw new Exception('Failed to generate OTP. Please try again.');
+        }
+    }
+
+    /**
+     * Verify the provided OTP
+     */
+    public function verifyOtp($email, $otp, $token = null)
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM otps 
+                 WHERE email = :email 
+                 AND otp = :otp 
+                 AND is_used = 0 
+                 AND expires_at > NOW()
+                 " . ($token ? " AND token = :token" : "") . "
+                 ORDER BY created_at DESC 
+                 LIMIT 1"
+            );
+
+            $params = [':email' => $email, ':otp' => $otp];
+            if ($token) {
+                $params[':token'] = $token;
+            }
+
+            $stmt->execute($params);
+            $otpRecord = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$otpRecord) {
+                return [
+                    'valid' => false,
+                    'message' => 'Invalid or expired OTP.'
+                ];
+            }
+
+            // Mark OTP as used
+            $this->markAsUsed($otpRecord['id']);
+
+            return [
+                'valid' => true,
+                'message' => 'OTP verified successfully.'
+            ];
+        } catch (PDOException $e) {
+            error_log("OTP Verification Error: " . $e->getMessage());
+            throw new Exception('Failed to verify OTP. Please try again.');
+        }
+    }
+
+    /**
+     * Check if OTP is valid without consuming it
+     */
+    public function checkOtp($email, $otp, $token = null)
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM otps 
+                 WHERE email = :email 
+                 AND otp = :otp 
+                 AND is_used = 0 
+                 AND expires_at > NOW()
+                 " . ($token ? " AND token = :token" : "") . "
+                 ORDER BY created_at DESC 
+                 LIMIT 1"
+            );
+
+            $params = [':email' => $email, ':otp' => $otp];
+            if ($token) {
+                $params[':token'] = $token;
+            }
+
+            $stmt->execute($params);
+            return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+        } catch (PDOException $e) {
+            error_log("OTP Check Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get OTP details by token
+     */
+    public function getOtpByToken($token)
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM otps 
+                 WHERE token = :token 
+                 AND is_used = 0 
+                 AND expires_at > NOW()
+                 LIMIT 1"
+            );
+
+            $stmt->execute([':token' => $token]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Get OTP Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Invalidate all active OTPs for an email
+     */
+    public function invalidateExistingOtps($email)
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE otps 
+                 SET is_used = 1 
+                 WHERE email = :email 
+                 AND is_used = 0 
+                 AND expires_at > NOW()"
+            );
+            return $stmt->execute([':email' => $email]);
+        } catch (PDOException $e) {
+            error_log("Invalidate OTPs Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Mark OTP as used
+     */
+    private function markAsUsed($otpId)
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE otps SET is_used = 1, updated_at = NOW() WHERE id = :id"
+            );
+            return $stmt->execute([':id' => $otpId]);
+        } catch (PDOException $e) {
+            error_log("Mark OTP as Used Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if the request is rate limited
+     */
+    private function isRateLimited($email, $ipAddress = null)
+    {
+        try {
+            $timeWindow = date('Y-m-d H:i:s', strtotime('-1 minute'));
+            
+            $sql = "SELECT COUNT(*) as count FROM otps 
+                    WHERE (email = :email " . 
+                    ($ipAddress ? " OR ip_address = :ip_address" : "") . 
+                    ") AND created_at > :time_window";
+            
+            $stmt = $this->db->prepare($sql);
+            
+            $params = [
+                ':email' => $email,
+                ':time_window' => $timeWindow
+            ];
+            
+            if ($ipAddress) {
+                $params[':ip_address'] = $ipAddress;
+            }
+            
+            $stmt->execute($params);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return ($result['count'] >= $this->config['max_attempts']);
+        } catch (PDOException $e) {
+            error_log("Rate Limit Check Error: " . $e->getMessage());
+            return true; // Fail safe - block if we can't check
+        }
+    }
+
+    /**
+     * Generate a random numeric OTP
+     */
+    private function generateRandomOtp($length = 6)
+    {
+        $characters = '0123456789';
+        $otp = '';
+        $max = strlen($characters) - 1;
+        
+        for ($i = 0; $i < $length; $i++) {
+            $otp .= $characters[random_int(0, $max)];
+        }
+        
+        return $otp;
+    }
+}

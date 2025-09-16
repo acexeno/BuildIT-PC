@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../utils/apiBase';
 import { Plus, Trash2, Edit, Eye, Share2, Download, Calendar, DollarSign, CheckCircle, AlertCircle, Clock, Package, Globe, Lock } from 'lucide-react';
 
 // Helper function to check if JWT token is expired
@@ -19,6 +20,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [buildToDelete, setBuildToDelete] = useState(null);
   const [togglingPublic, setTogglingPublic] = useState(null);
+  const [submissions, setSubmissions] = useState([]); // status per build
 
   // Load builds from backend
   useEffect(() => {
@@ -33,7 +35,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
         const headers = {
           'Authorization': `Bearer ${token}`
         };
-        const response = await fetch('/backend/api/index.php?endpoint=builds', {
+        const response = await fetch(`${API_BASE}/index.php?endpoint=builds`, {
           method: 'GET',
           headers
         });
@@ -60,6 +62,22 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
     fetchBuilds();
   }, []);
 
+  // Load user's community submissions
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || isTokenExpired(token)) return;
+      try {
+        const res = await fetch(`${API_BASE}/community_submission.php`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        if (result.success) setSubmissions(result.data || []);
+      } catch {}
+    };
+    fetchSubmissions();
+  }, []);
+
   const handleDeleteBuild = (buildId) => {
     setBuildToDelete(buildId);
     setShowDeleteModal(true);
@@ -68,7 +86,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
   const confirmDelete = async () => {
     if (!buildToDelete) return;
     try {
-      const response = await fetch(`/backend/api/index.php?endpoint=builds&id=${buildToDelete}`, {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=builds&id=${buildToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -91,7 +109,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
   const handleTogglePublic = async (buildId) => {
     setTogglingPublic(buildId);
     try {
-      const response = await fetch(`/backend/api/index.php?endpoint=builds&public=1&id=${buildId}`, {
+      const response = await fetch(`${API_BASE}/index.php?endpoint=builds&public=1&id=${buildId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -106,13 +124,40 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
         ));
         alert(result.message);
       } else {
-        alert('Error updating build visibility: ' + (result.error || 'Unknown error'));
+        alert(result.error || 'Unable to change visibility.');
       }
     } catch (error) {
       console.error('Error updating build visibility:', error);
       alert('Error updating build visibility. Please try again.');
     } finally {
       setTogglingPublic(null);
+    }
+  };
+
+  const submitToCommunity = async (build) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/community_submission.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          build_id: build.id,
+          build_name: build.name,
+          build_description: build.description || '',
+          total_price: build.totalPrice || 0,
+          compatibility: build.compatibility || 0
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        alert('Build submitted for community review! Admins will review and approve it for the community.');
+        setSubmissions(prev => [{ id: result.submission_id, build_id: build.id, status: 'pending' }, ...prev]);
+      } else {
+        alert(result.error || 'Failed to submit for review.');
+      }
+    } catch (e) {
+      console.error('Error submitting to community:', e);
+      alert('Network error while submitting. Please try again.');
     }
   };
 
@@ -217,7 +262,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
       </div>
       
       <div className="mt-8 p-6 bg-blue-50 rounded-lg max-w-md">
-        <h4 className="font-semibold text-blue-900 mb-2">💡 Pro Tips:</h4>
+                        <h4 className="font-semibold text-blue-900 mb-2">Pro Tips:</h4>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Save multiple builds to compare different configurations</li>
           <li>• Share your builds with friends for feedback</li>
@@ -230,6 +275,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
 
   const BuildCard = ({ build }) => {
     const compatibility = getCompatibilityStatus(build.compatibility);
+    const submission = submissions.find(s => s.build_id === build.id);
     // Ensure components is always an array
     const components = Array.isArray(build.components)
       ? build.components
@@ -272,6 +318,16 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
                   <Lock className="w-4 h-4" />
                 )}
               </button>
+              {!build.isPublic && (
+                <button
+                  onClick={() => submitToCommunity(build)}
+                  disabled={submission && submission.status === 'pending'}
+                  className={`p-2 rounded-lg transition-colors ${submission && submission.status === 'pending' ? 'text-yellow-600 bg-yellow-50' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'}`}
+                  title={submission && submission.status === 'pending' ? 'Awaiting admin review' : 'Submit to Community'}
+                >
+                  {submission && submission.status === 'pending' ? <Clock className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                </button>
+              )}
               <button 
                 onClick={() => handleEditBuild(build)}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
@@ -392,7 +448,7 @@ const MyBuilds = ({ setCurrentPage, setSelectedComponents }) => {
           
           <div className="flex gap-3">
             <button 
-              onClick={() => setCurrentPage('public-builds')}
+              onClick={() => setCurrentPage('prebuilt-pcs')}
               className="border-2 border-gray-300 text-gray-700 px-5 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
               <Share2 className="w-5 h-5" /> Browse Community

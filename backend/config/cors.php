@@ -1,8 +1,13 @@
 <?php
 // Robust CORS handling for local development and production
 
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+// Skip CORS logic entirely when running via CLI (e.g., php script.php)
+if (PHP_SAPI === 'cli') {
+    return;
+}
+
+// Handle preflight OPTIONS request (guard against undefined indexes)
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     if (isset($_SERVER['HTTP_ORIGIN'])) {
         header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
     } else {
@@ -22,4 +27,4 @@ if (isset($_SERVER['HTTP_ORIGIN'])) {
 } else {
     header("Access-Control-Allow-Origin: *");
 }
-header('Content-Type: application/json'); 
+header('Content-Type: application/json');

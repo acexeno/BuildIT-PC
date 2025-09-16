@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { Settings, Monitor, Bell, Cpu, BarChart3, Users, Package, Wrench, FileText, TrendingUp, MessageSquare, Menu, X, Lock } from 'lucide-react';
+import React from 'react';
+import { Settings, Monitor, Bell, Cpu, BarChart3, Users, Package, Truck, Wrench, FileText, TrendingUp, MessageSquare, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabChange, activeSuperAdminTab, notificationsCount }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabChange, activeSuperAdminTab, notificationsCount, isCollapsed, onToggleCollapse }) => {
   // handle user logout with confirmation
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
@@ -26,27 +24,45 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
     return 'bg-green-500';
   };
 
-  // Admin navigation with permission locks
+
+  // Super Admin navigation tabs
+  const superAdminTabs = [
+    { id: 'dashboard', name: 'Dashboard', icon: <BarChart3 className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'notifications', name: 'Notifications', icon: <Bell className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'system-reports', name: 'Sales Reports', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'inventory', name: 'Inventory', icon: <Package className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'orders-management', name: 'Orders', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'supplier-management', name: 'Supplier', icon: <Truck className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'prebuilt-management', name: 'Prebuilt', icon: <Monitor className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'admin-chat-support', name: 'Chat Support', icon: <MessageSquare className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'user-management', name: 'User', icon: <Users className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> }
+  ];
+
+  // Admin navigation tabs (no locks for Admin, only for Employee)
   const adminTabs = [
     { id: 'dashboard', name: 'Dashboard', icon: <BarChart3 className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
     { id: 'notifications', name: 'Notifications', icon: <Bell className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-    { id: 'sales-reports', name: 'Sales Reports', icon: <TrendingUp className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-    { id: 'system-reports', name: 'System Reports', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'system-reports', name: 'Sales Reports', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
     { id: 'inventory', name: 'Inventory', icon: <Package className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-    { id: 'orders-management', name: 'Orders Management', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'orders-management', name: 'Orders', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'supplier-management', name: 'Supplier', icon: <Users className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
     { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-    { id: 'prebuilt-management', name: 'Prebuilt Management', icon: <Monitor className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
+    { id: 'prebuilt-management', name: 'Prebuilt', icon: <Monitor className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
     { id: 'admin-chat-support', name: 'Chat Support', icon: <MessageSquare className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> }
   ];
 
+  // Only apply locks if user is Employee
   const adminTabsWithLocks = adminTabs.map(tab => {
     let isDisabled = false;
-    if (tab.id === 'inventory') {
-      isDisabled = Number(user?.can_access_inventory) !== 1;
-    } else if (tab.id === 'orders-management') {
-      isDisabled = Number(user?.can_access_orders) !== 1;
-    } else if (tab.id === 'admin-chat-support') {
-      isDisabled = Number(user?.can_access_chat_support) !== 1;
+    if (user?.roles?.includes('Employee')) {
+      if (tab.id === 'inventory') {
+        isDisabled = Number(user?.can_access_inventory) !== 1;
+      } else if (tab.id === 'orders-management') {
+        isDisabled = Number(user?.can_access_orders) !== 1;
+      } else if (tab.id === 'admin-chat-support') {
+        isDisabled = Number(user?.can_access_chat_support) !== 1;
+      }
     }
     return { ...tab, isDisabled };
   });
@@ -65,36 +81,27 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
     } else {
       onPageChange(tabId);
     }
-    setIsMobileMenuOpen(false);
   };
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="md:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-white p-2 rounded-md shadow-lg border"
-        >
-          {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </div>
-
-      {/* Mobile overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
       {/* Sidebar */}
       <div className={`
-        fixed md:relative inset-y-0 left-0 z-40 top-0
-        w-72 xl:w-80 bg-white shadow-lg flex flex-col h-screen flex-shrink-0
-        transform transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        sticky top-0 z-40
+        bg-white shadow-lg flex flex-col h-screen flex-shrink-0 relative
+        ${isCollapsed ? 'w-[88px] xl:w-[104px]' : 'w-[288px] xl:w-[320px]'}
+        transition-[width] duration-300 ease-in-out
       `}>
+        {/* Collapse toggle */}
+        <div className="absolute top-4 right-4 z-50">
+          <button
+            onClick={onToggleCollapse}
+            className="bg-white p-2 rounded-md shadow-lg border"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+          </button>
+        </div>
         {/* header with logo */}
         <div className="p-4 lg:p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
@@ -103,10 +110,12 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
               </svg>
             </div>
-            <div>
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900">SIMS</h1>
-              <p className="text-xs lg:text-sm text-gray-500">PC Building Platform</p>
-            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900">SIMS</h1>
+                <p className="text-xs lg:text-sm text-gray-500">PC Building Platform</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -127,44 +136,36 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   </svg>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">
-                  {user?.first_name} {user?.last_name}
-                </p>
-                <p className="text-xs text-gray-500 truncate">@{user?.username}</p>
-                <div className="flex items-center mt-1">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${getRoleColor()}`}>
-                    {getUserRoleDisplay()}
-                  </span>
+              {!isCollapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs lg:text-sm font-medium text-gray-900 truncate">
+                    {user?.first_name} {user?.last_name}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">@{user?.username}</p>
+                  <div className="flex items-center mt-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white ${getRoleColor()}`}>
+                      {getUserRoleDisplay()}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
 
         {/* navigation menu */}
-        <nav className="flex-1 p-3 lg:p-4 space-y-1 lg:space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-3 lg:p-4 space-y-1 lg:space-y-2 overflow-y-auto max-h-[calc(100vh-200px)]">
           {/* super admin menu items */}
           {user?.roles?.includes('Super Admin') && (
             <>
-              <div className="pt-2 lg:pt-4 border-t border-gray-200">
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Super Admin
-                </h3>
-              </div>
-              {[
-                { id: 'dashboard', name: 'Dashboard', icon: <BarChart3 className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'notifications', name: 'Notifications', icon: <Bell className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'reports', name: 'Sales Reports', icon: <TrendingUp className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'system-reports', name: 'System Reports', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'inventory', name: 'Inventory', icon: <Package className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'orders-management', name: 'Orders Management', icon: <FileText className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'pc-assembly', name: 'PC Assembly', icon: <Cpu className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'prebuilt-management', name: 'Prebuilt Management', icon: <Monitor className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'user-management', name: 'User Management', icon: <Users className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'admin-chat-support', name: 'Chat Support', icon: <MessageSquare className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> },
-                { id: 'system-settings', name: 'Settings', icon: <Settings className="mr-3 h-4 w-4 lg:h-5 lg:w-5" /> }
-              ].map(tab => (
+              {!isCollapsed && (
+                <div className="pt-2 lg:pt-4 border-t border-gray-200">
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Super Admin
+                  </h3>
+                </div>
+              )}
+              {superAdminTabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => {
@@ -173,18 +174,19 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                     } else {
                       onSuperAdminTabChange(tab.id);
                     }
-                    setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors truncate ${
+                  className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors ${isCollapsed ? 'justify-center' : 'truncate'} ${
                     (currentPage === 'super-admin-dashboard' && activeSuperAdminTab === tab.id) || 
                     (currentPage === tab.id)
                       ? 'bg-red-100 text-red-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
+                  title={tab.name}
+                  aria-label={tab.name}
                 >
                   {tab.icon}
-                  {tab.name}
-                  {tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
+                  {!isCollapsed && tab.name}
+                  {!isCollapsed && tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
                     <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                       {notificationsCount}
                     </span>
@@ -194,33 +196,69 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
             </>
           )}
 
-          {user?.roles?.includes('Admin') && (
+          {user?.roles?.includes('Admin') && !user?.roles?.includes('Super Admin') && (
             <>
-              <div className="pt-2 lg:pt-4 border-t border-gray-200">
-                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Admin
-                </h3>
-              </div>
+              {!isCollapsed && (
+                <div className="pt-2 lg:pt-4 border-t border-gray-200">
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Admin
+                  </h3>
+                </div>
+              )}
+              {adminTabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleAdminNavigation(tab.id, false)}
+                  className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors ${isCollapsed ? 'justify-center' : 'truncate'} ${
+                    (tab.id === 'dashboard' && currentPage === 'admin-dashboard') || currentPage === tab.id
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                  title={tab.name}
+                  aria-label={tab.name}
+                >
+                  {tab.icon}
+                  {!isCollapsed && <span className="flex-1 text-left">{tab.name}</span>}
+                  {!isCollapsed && tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
+                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      {notificationsCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+          {/* Employee menu with locks */}
+          {user?.roles?.includes('Employee') && !user?.roles?.includes('Admin') && (
+            <>
+              {!isCollapsed && (
+                <div className="pt-2 lg:pt-4 border-t border-gray-200">
+                  <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Employee
+                  </h3>
+                </div>
+              )}
               {adminTabsWithLocks.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => handleAdminNavigation(tab.id, tab.isDisabled)}
                   disabled={tab.isDisabled}
-                  className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors truncate ${
+                  className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors ${isCollapsed ? 'justify-center' : 'truncate'} ${
                     (tab.id === 'dashboard' && currentPage === 'admin-dashboard') || currentPage === tab.id
-                      ? 'bg-purple-100 text-purple-700'
+                      ? 'bg-blue-100 text-blue-700'
                       : tab.isDisabled
                         ? 'text-gray-400 cursor-not-allowed opacity-60 bg-gray-50 border border-gray-200'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
-                  title={tab.isDisabled ? 'Access disabled by Super Admin' : ''}
+                  title={tab.isDisabled ? 'Access disabled by Super Admin' : tab.name}
+                  aria-label={tab.name}
                 >
                   {tab.icon}
-                  <span className="flex-1 text-left">{tab.name}</span>
-                  {tab.isDisabled && (
+                  {!isCollapsed && <span className="flex-1 text-left">{tab.name}</span>}
+                  {!isCollapsed && tab.isDisabled && (
                     <Lock className="ml-2 h-4 w-4 text-gray-400" />
                   )}
-                  {tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
+                  {!isCollapsed && tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
                     <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                       {notificationsCount}
                     </span>
@@ -235,12 +273,12 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
         <div className="p-3 lg:p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors"
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-2'} px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-lg font-semibold transition-colors duration-200`}
           >
-            <svg className="mr-3 h-4 w-4 lg:h-5 lg:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Logout
+            {!isCollapsed && 'Logout'}
           </button>
         </div>
       </div>

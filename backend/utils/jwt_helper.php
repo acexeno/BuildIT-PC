@@ -127,7 +127,7 @@ function getUserPermissions($userRoles) {
             case 'Admin':
                 $permissions = array_merge($permissions, [
                     'users' => ['read', 'update'],
-                    'inventory' => ['create', 'read', 'update'],
+                    'inventory' => ['create', 'read', 'update', 'delete'],
                     'orders' => ['read', 'update'],
                     'reports' => ['read'],
                     'settings' => ['read', 'update'],

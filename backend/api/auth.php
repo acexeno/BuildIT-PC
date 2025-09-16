@@ -18,6 +18,24 @@ function handleRegister($pdo) {
         }
     }
     
+    // Check for emojis in text fields
+    $textFields = [
+        'username' => 'Username',
+        'first_name' => 'First name',
+        'last_name' => 'Last name',
+        'email' => 'Email',
+        'phone' => 'Phone',
+        'country' => 'Country'
+    ];
+    
+    foreach ($textFields as $field => $label) {
+        if (!empty($input[$field]) && preg_match('/[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F1E0}-\x{1F1FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}]/u', $input[$field])) {
+            http_response_code(400);
+            echo json_encode(['error' => "$label should not contain emojis"]);
+            return;
+        }
+    }
+    
     // check if the email format is valid
     if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
         http_response_code(400);
@@ -196,9 +214,9 @@ function handleGetProfile($pdo) {
             'created_at' => $user['created_at'],
             'last_login' => $user['last_login'],
             'roles' => $roles,
-            'can_access_inventory' => isset($user['can_access_inventory']) ? (int)$user['can_access_inventory'] : 0,
-            'can_access_orders' => isset($user['can_access_orders']) ? (int)$user['can_access_orders'] : 0,
-            'can_access_chat_support' => isset($user['can_access_chat_support']) ? (int)$user['can_access_chat_support'] : 0
+            'can_access_inventory' => 1,
+            'can_access_orders' => 1,
+            'can_access_chat_support' => 1
         ]
     ]);
 }

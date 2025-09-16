@@ -1,8 +1,8 @@
 import React from 'react'
-import { CheckCircle, XCircle, AlertTriangle, Info, Zap, Shield, Cpu, HardDrive } from 'lucide-react'
+import { CheckCircle, XCircle, AlertTriangle, Info, Zap, Shield, Cpu, HardDrive, MemoryStick, Package, Thermometer, Monitor } from 'lucide-react'
 
 const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compatibilityDetails = {}, selectionProgress = 0 }) => {
-  // all the compatibility checks we need to run
+  // Enhanced compatibility checks with more comprehensive coverage
   const compatibilityChecks = [
     {
       id: 'cpu_motherboard',
@@ -10,15 +10,44 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
       description: 'Socket compatibility check',
       status: compatibilityStatus.cpu_motherboard,
       detail: compatibilityDetails.cpu_motherboard,
-      icon: <Cpu className="w-5 h-5" />
+      icon: <Cpu className="w-5 h-5" />,
+      critical: true
     },
     {
       id: 'ram_motherboard',
       name: 'RAM & Motherboard',
-      description: 'Memory type compatibility',
+      description: 'Memory type and speed compatibility',
       status: compatibilityStatus.ram_motherboard,
       detail: compatibilityDetails.ram_motherboard,
-      icon: <HardDrive className="w-5 h-5" />
+      icon: <MemoryStick className="w-5 h-5" />,
+      critical: true
+    },
+    {
+      id: 'ram_slots',
+      name: 'RAM Slots',
+      description: 'RAM modules vs motherboard slots',
+      status: compatibilityStatus.ram_slots,
+      detail: compatibilityDetails.ram_slots,
+      icon: <MemoryStick className="w-5 h-5" />,
+      critical: true
+    },
+    {
+      id: 'ram_speed',
+      name: 'RAM Speed',
+      description: 'Memory speed vs motherboard support',
+      status: compatibilityStatus.ram_speed,
+      detail: compatibilityDetails.ram_speed,
+      icon: <MemoryStick className="w-5 h-5" />,
+      critical: false
+    },
+    {
+      id: 'storage_interface',
+      name: 'Storage Interface',
+      description: 'Storage connection compatibility',
+      status: compatibilityStatus.storage_interface,
+      detail: compatibilityDetails.storage_interface,
+      icon: <HardDrive className="w-5 h-5" />,
+      critical: true
     },
     {
       id: 'psu_power',
@@ -26,7 +55,17 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
       description: 'Adequate power for components',
       status: compatibilityStatus.psu_power,
       detail: compatibilityDetails.psu_power,
-      icon: <Zap className="w-5 h-5" />
+      icon: <Zap className="w-5 h-5" />,
+      critical: true
+    },
+    {
+      id: 'psu_form_factor',
+      name: 'PSU Form Factor',
+      description: 'PSU size vs case support',
+      status: compatibilityStatus.psu_form_factor,
+      detail: compatibilityDetails.psu_form_factor,
+      icon: <Zap className="w-5 h-5" />,
+      critical: true
     },
     {
       id: 'case_motherboard',
@@ -34,23 +73,65 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
       description: 'Form factor compatibility',
       status: compatibilityStatus.case_motherboard,
       detail: compatibilityDetails.case_motherboard,
-      icon: <Shield className="w-5 h-5" />
+      icon: <Package className="w-5 h-5" />,
+      critical: true
+    },
+    {
+      id: 'gpu_length',
+      name: 'GPU & Case',
+      description: 'Graphics card length fit',
+      status: compatibilityStatus.gpu_length,
+      detail: compatibilityDetails.gpu_length,
+      icon: <Monitor className="w-5 h-5" />,
+      critical: true
+    },
+    {
+      id: 'cooler_height',
+      name: 'CPU Cooler & Case',
+      description: 'Cooler height clearance',
+      status: compatibilityStatus.cooler_height,
+      detail: compatibilityDetails.cooler_height,
+      icon: <Thermometer className="w-5 h-5" />,
+      critical: false
+    },
+    {
+      id: 'cooler_socket',
+      name: 'CPU Cooler Socket',
+      description: 'Cooler socket compatibility',
+      status: compatibilityStatus.cooler_socket,
+      detail: compatibilityDetails.cooler_socket,
+      icon: <Thermometer className="w-5 h-5" />,
+      critical: true
+    },
+    {
+      id: 'ram_cpu_speed',
+      name: 'RAM & CPU Speed',
+      description: 'Memory speed vs CPU support',
+      status: compatibilityStatus.ram_cpu_speed,
+      detail: compatibilityDetails.ram_cpu_speed,
+      icon: <MemoryStick className="w-5 h-5" />,
+      critical: false
     }
-  ]
+  ];
+
+  // Filter checks to show only those with status
+  const activeChecks = compatibilityChecks.filter(check => check.status !== undefined);
+  const criticalChecks = activeChecks.filter(check => check.critical);
+  const nonCriticalChecks = activeChecks.filter(check => !check.critical);
 
   // figure out what color to use for the score
   const getScoreColor = (score) => {
     if (score === 0) return 'text-gray-600'
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-yellow-600'
+    if (score >= 90) return 'text-green-600'
+    if (score >= 70) return 'text-yellow-600'
     return 'text-red-600'
   }
 
   // figure out what background color to use for the score
   const getScoreBg = (score) => {
     if (score === 0) return 'bg-gray-100'
-    if (score >= 80) return 'bg-green-100'
-    if (score >= 60) return 'bg-yellow-100'
+    if (score >= 90) return 'bg-green-100'
+    if (score >= 70) return 'bg-yellow-100'
     return 'bg-red-100'
   }
 
@@ -85,10 +166,14 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
   // pick the right color for the progress bar
   const getProgressColor = (score) => {
     if (score === 0) return 'bg-gray-400'
-    if (score >= 80) return 'bg-green-500'
-    if (score >= 60) return 'bg-yellow-500'
+    if (score >= 90) return 'bg-green-500'
+    if (score >= 70) return 'bg-yellow-500'
     return 'bg-red-500'
   }
+
+  // Get critical issues count
+  const criticalIssues = criticalChecks.filter(check => check.status === false).length;
+  const totalCriticalChecks = criticalChecks.length;
 
   return (
     <div className="card">
@@ -96,6 +181,11 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold text-gray-900">Compatibility Status</h3>
+          {criticalIssues > 0 && (
+            <span className="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
+              {criticalIssues} Critical Issue{criticalIssues > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
         <span className="block text-sm font-medium text-gray-800 mb-2">
           {selectionProgress}% Selected | {compatibilityScore}% Compatible
@@ -121,7 +211,7 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
             : selectionProgress < 100
             ? `${selectionProgress}% of required components selected`
             : compatibilityScore === 100
-            ? "🎉 Perfect! All components are compatible"
+            ? "Perfect! All components are compatible"
             : compatibilityScore > 0
             ? `${compatibilityScore}% of compatibility checks passed`
             : "Compatibility issues detected"
@@ -129,52 +219,118 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
         </p>
       </div>
 
-      {/* Compatibility Checks */}
-      <div className="space-y-4 mb-6">
-        {compatibilityChecks.map((check) => (
-          <div
-            key={check.id}
-            className={`p-4 rounded-lg border transition-all duration-200 ${getStatusBg(check.status)}`}
-          >
-            <div className="flex items-start gap-4">
-              <div className={`p-2 rounded-lg ${check.status === true ? 'bg-green-100' : check.status === false ? 'bg-red-100' : 'bg-gray-100'}`}>
-                {check.icon}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900 text-lg">{check.name}</h4>
-                  {getStatusIcon(check.status)}
-                </div>
-                <p className="text-sm text-gray-600 mb-1">{check.description}</p>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-sm font-medium ${getStatusColor(check.status)}`}>
-                    {getStatusText(check.status)}
-                  </span>
-                </div>
-                {/* Show detail if failed */}
-                {check.status === false && check.detail && (
-                  <div className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1 mt-1">
-                    <AlertTriangle className="inline w-4 h-4 mr-1 text-orange-500 align-text-bottom" />
-                    {check.detail}
+      {/* Critical Compatibility Checks */}
+      {criticalChecks.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-red-600" />
+            Critical Checks
+            <span className="text-sm font-normal text-gray-500">
+              ({criticalChecks.filter(c => c.status === true).length}/{criticalChecks.length} passed)
+            </span>
+          </h4>
+          <div className="space-y-3">
+            {criticalChecks.map((check) => (
+              <div
+                key={check.id}
+                className={`p-4 rounded-lg border transition-all duration-200 ${getStatusBg(check.status)}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-2 rounded-lg ${check.status === true ? 'bg-green-100' : check.status === false ? 'bg-red-100' : 'bg-gray-100'}`}>
+                    {check.icon}
                   </div>
-                )}
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900 text-lg">{check.name}</h4>
+                      {getStatusIcon(check.status)}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">{check.description}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-sm font-medium ${getStatusColor(check.status)}`}>
+                        {getStatusText(check.status)}
+                      </span>
+                    </div>
+                    {/* Show detail if failed or has warning */}
+                    {(check.status === false || (check.status === true && check.detail)) && check.detail && (
+                      <div className={`text-xs rounded px-2 py-1 mt-1 ${
+                        check.status === false 
+                          ? 'text-red-700 bg-red-50 border border-red-200' 
+                          : 'text-blue-700 bg-blue-50 border border-blue-200'
+                      }`}>
+                        <AlertTriangle className="inline w-4 h-4 mr-1 align-text-bottom" />
+                        {check.detail}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Non-Critical Compatibility Checks */}
+      {nonCriticalChecks.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Info className="w-5 h-5 text-blue-600" />
+            Additional Checks
+            <span className="text-sm font-normal text-gray-500">
+              ({nonCriticalChecks.filter(c => c.status === true).length}/{nonCriticalChecks.length} passed)
+            </span>
+          </h4>
+          <div className="space-y-3">
+            {nonCriticalChecks.map((check) => (
+              <div
+                key={check.id}
+                className={`p-4 rounded-lg border transition-all duration-200 ${getStatusBg(check.status)}`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-2 rounded-lg ${check.status === true ? 'bg-green-100' : check.status === false ? 'bg-yellow-100' : 'bg-gray-100'}`}>
+                    {check.icon}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900 text-lg">{check.name}</h4>
+                      {getStatusIcon(check.status)}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">{check.description}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-sm font-medium ${getStatusColor(check.status)}`}>
+                        {getStatusText(check.status)}
+                      </span>
+                    </div>
+                    {/* Show detail if failed or has warning */}
+                    {(check.status === false || (check.status === true && check.detail)) && check.detail && (
+                      <div className={`text-xs rounded px-2 py-1 mt-1 ${
+                        check.status === false 
+                          ? 'text-yellow-700 bg-yellow-50 border border-yellow-200' 
+                          : 'text-blue-700 bg-blue-50 border border-blue-200'
+                      }`}>
+                        <AlertTriangle className="inline w-4 h-4 mr-1 align-text-bottom" />
+                        {check.detail}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Compatibility Tips */}
       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <h4 className="font-medium text-blue-900 mb-2">💡 Compatibility Tips</h4>
+                            <h4 className="font-medium text-blue-900 mb-2">Compatibility Tips</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Ensure CPU socket matches motherboard socket</li>
-              <li>• Check RAM type compatibility (DDR4/DDR5)</li>
-              <li>• Verify PSU wattage meets component requirements</li>
-              <li>• Confirm case supports motherboard form factor</li>
+              <li>• Ensure CPU socket matches motherboard socket (AM4, AM5, LGA1200, LGA1700)</li>
+              <li>• Check RAM type compatibility (DDR4/DDR5) and speed support</li>
+              <li>• Verify PSU wattage meets component requirements (add 20% buffer)</li>
+              <li>• Confirm case supports motherboard form factor and component sizes</li>
+              <li>• Check GPU length and CPU cooler height fit in case</li>
               <li>• Consider aftermarket cooler for better performance</li>
             </ul>
           </div>
@@ -187,32 +343,32 @@ const CompatibilityChecker = ({ compatibilityStatus, compatibilityScore, compati
           <div className="flex items-center gap-3">
             <CheckCircle className="w-6 h-6 text-green-600" />
             <div>
-              <h4 className="font-medium text-green-900">🎉 Perfect Compatibility!</h4>
+                              <h4 className="font-medium text-green-900">Perfect Compatibility!</h4>
               <p className="text-sm text-green-800">All components are compatible and ready for assembly.</p>
             </div>
           </div>
         </div>
       )}
 
-      {compatibilityScore > 0 && compatibilityScore < 100 && (
+      {compatibilityScore > 0 && compatibilityScore < 100 && criticalIssues === 0 && (
         <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-6 h-6 text-yellow-600" />
             <div>
-              <h4 className="font-medium text-yellow-900">⚠️ Partial Compatibility</h4>
-              <p className="text-sm text-yellow-800">Some components may have compatibility issues. Please review the checks above.</p>
+                              <h4 className="font-medium text-yellow-900">Minor Compatibility Issues</h4>
+              <p className="text-sm text-yellow-800">Some non-critical compatibility issues detected. Your build should work but consider the recommendations above.</p>
             </div>
           </div>
         </div>
       )}
 
-      {compatibilityScore === 0 && Object.keys(compatibilityStatus).length > 0 && (
+      {criticalIssues > 0 && (
         <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
           <div className="flex items-center gap-3">
             <XCircle className="w-6 h-6 text-red-600" />
             <div>
-              <h4 className="font-medium text-red-900">❌ Compatibility Issues</h4>
-              <p className="text-sm text-red-800">Multiple compatibility issues detected. Please review and adjust your component selection.</p>
+              <h4 className="font-medium text-red-900">❌ Critical Compatibility Issues</h4>
+              <p className="text-sm text-red-800">{criticalIssues} critical compatibility issue{criticalIssues > 1 ? 's' : ''} detected. Please resolve these before proceeding.</p>
             </div>
           </div>
         </div>

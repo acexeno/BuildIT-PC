@@ -1,0 +1,89 @@
+[OTP Generated] Email: test@example.com, OTP: 062028, Expires: 2025-09-04 08:35:38
+[2025-09-04 08:30:02][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 08:30:03][OtpManager->generateOtp()] Generated OTP: 302326, Expires: 2025-09-04 08:40:03
+[2025-09-04 08:30:03][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at) VALUES (?, ?, ?) with params: test@example.com, [OTP_REDACTED], 2025-09-04 08:40:03
+[2025-09-04 08:30:03][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 302326, Expires: 2025-09-04 08:40:03
+[2025-09-04 08:30:03][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 08:30:37][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 08:30:37][OtpManager->generateOtp()] Generated OTP: 725255, Expires: 2025-09-04 08:40:37
+[2025-09-04 08:30:37][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at) VALUES (?, ?, ?) with params: test@example.com, [OTP_REDACTED], 2025-09-04 08:40:37
+[2025-09-04 08:30:37][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 725255, Expires: 2025-09-04 08:40:37
+[2025-09-04 08:30:37][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 14:36:26][OtpManager->generateOtp()] Starting OTP generation for: kenniellmart@gmail.com
+[2025-09-04 14:36:26][OtpManager->generateOtp()] Generated OTP: 628772, Expires: 2025-09-04 14:46:26
+[2025-09-04 14:36:26][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at) VALUES (?, ?, ?) with params: kenniellmart@gmail.com, [OTP_REDACTED], 2025-09-04 14:46:26
+[2025-09-04 14:36:26][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: kenniellmart@gmail.com, OTP: 628772, Expires: 2025-09-04 14:46:26
+[2025-09-04 14:36:26][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 08:44:52][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 08:44:52][OtpManager->generateOtp()] Generated OTP: 615845, Expires: 2025-09-04 08:54:52
+[2025-09-04 08:44:52][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at) VALUES (?, ?, ?) with params: test@example.com, [OTP_REDACTED], 2025-09-04 08:54:52
+[2025-09-04 08:44:52][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 615845, Expires: 2025-09-04 08:54:52
+[2025-09-04 08:44:52][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 14:49:38][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 14:49:38][OtpManager->generateOtp()] Generated OTP: 858551, Expires: 2025-09-04 14:59:38
+[2025-09-04 14:49:38][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at) VALUES (?, ?, ?) with params: test@example.com, [OTP_REDACTED], 2025-09-04 14:59:38
+[2025-09-04 14:49:38][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 858551, Expires: 2025-09-04 14:59:38
+[2025-09-04 14:49:38][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 14:54:07][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 14:54:12][OtpManager->verifyOtp()] Verifying OTP for email: test@example.com
+[2025-09-04 14:54:12][OtpManager->verifyOtp()] Executing SQL: SELECT id, otp, is_used, expires_at, created_at 
+                    FROM otps 
+                    WHERE email = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT 1 with params: test@example.com
+[2025-09-04 14:54:12][OtpManager->verifyOtp()] Latest OTP found - ID: 6, OTP: [HIDDEN], Used: 0, Expires: 2025-09-04 14:59:38
+[2025-09-04 14:54:12][OtpManager->verifyOtp()] OTP does not match. Expected: [HIDDEN], Got: 123456
+[2025-09-04 14:55:19][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 14:55:19][OtpManager->generateOtp()] Marked any existing unused OTPs as expired
+[2025-09-04 14:55:19][OtpManager->generateOtp()] Generated OTP: 835233, Expires: 2025-09-04 15:05:19
+[2025-09-04 14:55:19][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at, is_used) VALUES (?, ?, ?, 0) with params: test@example.com, [OTP_REDACTED], 2025-09-04 15:05:19
+[2025-09-04 14:55:19][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 835233, Expires: 2025-09-04 15:05:19
+[2025-09-04 14:55:19][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 14:55:25][OtpManager->verifyOtp()] Verifying OTP for email: test@example.com
+[2025-09-04 14:55:25][OtpManager->verifyOtp()] Executing SQL: SELECT id, otp, is_used, expires_at, created_at 
+                    FROM otps 
+                    WHERE email = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT 1 with params: test@example.com
+[2025-09-04 14:55:25][OtpManager->verifyOtp()] Latest OTP found - ID: 7, OTP: [HIDDEN], Used: 0, Expires: 2025-09-04 15:05:19
+[2025-09-04 14:55:25][OtpManager->verifyOtp()] OTP does not match. Expected: [HIDDEN], Got: 123456
+[2025-09-04 14:56:52][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 14:56:52][OtpManager->generateOtp()] Marked any existing unused OTPs as expired
+[2025-09-04 14:56:52][OtpManager->generateOtp()] Generated OTP: 523896, Expires: 2025-09-04 15:06:52
+[2025-09-04 14:56:52][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at, is_used) VALUES (?, ?, ?, 0) with params: test@example.com, [OTP_REDACTED], 2025-09-04 15:06:52
+[2025-09-04 14:56:52][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 523896, Expires: 2025-09-04 15:06:52
+[2025-09-04 14:56:52][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 14:56:58][OtpManager->verifyOtp()] Verifying OTP for email: test@example.com, OTP: 835233
+[2025-09-04 14:56:58][OtpManager->verifyOtp()] Executing SQL: SELECT id, otp, is_used, expires_at, created_at 
+                    FROM otps 
+                    WHERE email = ? 
+                    ORDER BY created_at DESC 
+                    LIMIT 1 with params: test@example.com
+[2025-09-04 14:56:58][OtpManager->verifyOtp()] Latest OTP found - ID: 8, Used: 0, Expires: 2025-09-04 15:06:52
+[2025-09-04 14:56:58][OtpManager->verifyOtp()] OTP does not match. Expected: 523896, Got: 835233
+[2025-09-04 15:01:13][OtpManager->generateOtp()] Starting OTP generation for: test@example.com
+[2025-09-04 15:01:13][OtpManager->generateOtp()] Marked any existing unused OTPs as expired
+[2025-09-04 15:01:13][OtpManager->generateOtp()] Generated OTP: 346547, Expires: 2025-09-04 15:11:13
+[2025-09-04 15:01:13][OtpManager->generateOtp()] Executing SQL: INSERT INTO otps (email, otp, expires_at, is_used) VALUES (?, ?, ?, 0) with params: test@example.com, [OTP_REDACTED], 2025-09-04 15:11:13
+[2025-09-04 15:01:13][OtpManager->generateOtp()] OTP successfully stored in database
+[OTP Generated] Email: test@example.com, OTP: 346547, Expires: 2025-09-04 15:11:13
+[2025-09-04 15:01:13][OtpManager->generateOtp()] Successfully wrote to log file: C:\xampp\htdocs\capstone2\includes/../otp_log.txt
+[2025-09-04 15:01:18][OtpManager->verifyOtp()] Verifying OTP for email: test@example.com, OTP: 523896
+[2025-09-04 15:01:18][OtpManager->verifyOtp()] Executing SQL: SELECT id, otp, is_used, expires_at, created_at 
+                    FROM otps 
+                    WHERE email = ? AND is_used = 0 AND datetime(expires_at) > datetime('now')
+                    ORDER BY created_at DESC with params: test@example.com
+[2025-09-04 15:01:18][OtpManager->verifyOtp()] No matching valid OTP found for email: test@example.com
+[2025-09-04 15:01:22][OtpManager->verifyOtp()] Verifying OTP for email: test@example.com, OTP: 523896
+[2025-09-04 15:01:22][OtpManager->verifyOtp()] Executing SQL: SELECT id, otp, is_used, expires_at, created_at 
+                    FROM otps 
+                    WHERE email = ? AND is_used = 0 AND datetime(expires_at) > datetime('now')
+                    ORDER BY created_at DESC with params: test@example.com
+[2025-09-04 15:01:22][OtpManager->verifyOtp()] No matching valid OTP found for email: test@example.com

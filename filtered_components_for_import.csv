@@ -43,3 +43,8 @@ R5 5600G (TRAY) WITH HEATSINK FAN,1,AMD,,7840,10,5,,,,AM4,,,,,,,,,,,,,1YR,1
 B550M-ITX/AC,2,ASROCK,,9464,10,5,,,,AM4,,,,,,,,,,,,,1YR,1
 R5 5600X (box) WITH WRAITH STEALTH COOLER,1,AMD,,9475.20,10,5,,,,AM4,,,,,,,,,,,,,1YR,1
 B450MHP DDR4/3200 AM4,2,BIOSTAR,,3192,10,5,,,,AM4,,,,,,,,,,,,,1YR,1
+AMD Ryzen 5 5600,1,AMD,,7499,10,2,,{},AM4,6,12,65,DDR4,,,,,,,Processor,1YR,1
+ASRock B550M-HDV,2,ASRock,,4299,8,2,,{},AM4,,,DDR4,mATX,,,,,,Motherboard,1YR,1
+Kingston Fury 16GB,4,Kingston,,2499,20,5,,{},,,,,DDR4,,16GB,3200MHz,,,,RAM,1YR,1
+WD SN570 500GB,5,Western Digital,,2499,15,3,,{},,,,,,,,,500GB,,,,SSD,1YR,1
+Tecware Forge M,7,Tecware,,1990,7,2,,{},,,,,,ATX,,,,,,2,ATX Mid Tower,1YR,1
