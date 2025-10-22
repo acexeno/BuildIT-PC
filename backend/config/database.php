@@ -38,15 +38,7 @@ function get_db_connection() {
     $port = env('DB_PORT', '3306');
     $charset = env('DB_CHARSET', 'utf8mb4');
     
-    // If using default credentials, use Hostinger credentials directly
-    if ($user === 'root' && $pass === '') {
-        $host = 'localhost';
-        $db   = 'u709288172_builditpc_db';
-        $user = 'u709288172_sims';
-        $pass = 'Egiesims1@';
-        $port = '3306';
-        $charset = 'utf8mb4';
-    }
+    // Do not hardcode production credentials; always use environment variables
 
     $makeDsn = function($h, $d, $p, $c) {
         $portPart = $p ? ";port=$p" : '';
