@@ -92,8 +92,8 @@
   padding: .5rem 1rem; border: 1px solid transparent; cursor: pointer;
   transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
-.btn-primary { background: #4f46e5; color: #fff; }
-.btn-primary:hover { background: #4338ca; }
+.btn-primary { background: #16a34a; color: #fff; }
+.btn-primary:hover { background: #15803d; }
 .btn-secondary { background: #f3f4f6; color: #111827; border-color: #e5e7eb; }
 .btn-secondary:hover { background: #e5e7eb; }
 .btn-danger { background: #dc2626; color: #fff; }

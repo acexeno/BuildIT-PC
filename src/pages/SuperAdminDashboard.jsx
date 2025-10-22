@@ -27,11 +27,13 @@ import {
   Zap,
   Server,
   Thermometer,
-  Check
+  Check,
+  Download
 } from 'lucide-react'
 import { useNotifications } from '../contexts/NotificationContext'
 import { getComponentImage } from '../utils/componentImages'
 import { formatCurrencyPHP } from '../utils/currency'
+import { exportFilteredInventory } from '../utils/exportUtils'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts'
@@ -196,6 +198,21 @@ const InventoryManagement = ({ inventory, categories, user }) => {
   const [sortBy, setSortBy] = useState('name');
   const [modalItem, setModalItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showExportDropdown && !event.target.closest('.export-dropdown')) {
+        setShowExportDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showExportDropdown]);
 
   // Main component types for dropdown
   const mainCategories = [
@@ -274,14 +291,70 @@ const InventoryManagement = ({ inventory, categories, user }) => {
     return 0;
   });
 
+  // Export functionality
+  const handleExport = (format) => {
+    const exportedCount = exportFilteredInventory(
+      inventory,
+      searchTerm,
+      selectedCategory,
+      selectedBrand,
+      categories,
+      format
+    );
+    
+    if (exportedCount > 0) {
+      alert(`Successfully exported ${exportedCount} items to ${format.toUpperCase()} format.`);
+    } else {
+      alert('No items match the current filters to export.');
+    }
+  };
+
   return (
     <div className="page-container space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Inventory</h2>
-        <button className="btn btn-primary shadow" onClick={() => setEditItem({})}>
-          <Plus className="h-4 w-4" />
-          Add Product
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Export Dropdown */}
+          <div className="relative export-dropdown">
+            <button 
+              className="btn btn-outline shadow flex items-center gap-2"
+              onClick={() => setShowExportDropdown(!showExportDropdown)}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+            {showExportDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      handleExport('csv');
+                      setShowExportDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export as CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleExport('excel');
+                      setShowExportDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export as Excel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <button className="btn btn-primary shadow" onClick={() => setEditItem({})}>
+            <Plus className="h-4 w-4" />
+            Add Product
+          </button>
+        </div>
       </div>
       {/* Search, Filter, Sort Controls */}
       <div className="card flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
@@ -420,7 +493,7 @@ const InventoryManagement = ({ inventory, categories, user }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setModalItem(null)}>
           <div className="bg-white rounded-2xl shadow-2xl p-0 relative w-full max-w-4xl flex flex-col md:flex-row items-stretch" onClick={e => e.stopPropagation()}>
             {/* Close Button */}
-            <button className="absolute top-4 right-4 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-full p-3 transition-colors shadow text-2xl" onClick={() => setModalItem(null)} aria-label="Close modal">
+            <button className="absolute top-4 right-4 bg-gray-100 hover:bg-green-100 text-gray-500 hover:text-green-600 rounded-full p-3 transition-colors shadow text-2xl" onClick={() => setModalItem(null)} aria-label="Close modal">
               <span className="sr-only">Close</span>
               &times;
             </button>
@@ -448,7 +521,7 @@ const InventoryManagement = ({ inventory, categories, user }) => {
               {modalItem.specs && typeof modalItem.specs === 'object' && Object.keys(modalItem.specs).length > 0 && (
                 <div className="mb-2">
                   <div className="font-semibold text-gray-800 mb-2 text-lg">Specs:</div>
-                  <ul className="list-disc list-inside text-xs text-gray-700 bg-red-50 rounded p-2 border border-red-100 mt-1">
+                  <ul className="list-disc list-inside text-xs text-gray-700 bg-green-50 rounded p-2 border border-green-100 mt-1">
                     {Object.entries(modalItem.specs).map(([key, value]) => (
                       <li key={key}><span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span> {String(value)}</li>
                     ))}
@@ -589,7 +662,7 @@ const SuperAdminNotifications = () => {
 
   if (loading) return (
     <div className="flex items-center justify-center h-40">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
     </div>
   );
 
@@ -598,7 +671,7 @@ const SuperAdminNotifications = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
             <Bell className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -621,7 +694,7 @@ const SuperAdminNotifications = () => {
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
             >
               Mark All as Read
             </button>
@@ -663,12 +736,12 @@ const SuperAdminNotifications = () => {
               <div
                 key={n.id}
                 className={`bg-white rounded-2xl shadow-lg border p-4 transition-all duration-200 hover:shadow-2xl ${
-                  !n.read ? 'border-l-4 border-red-500 bg-red-50' : ''
+                  !n.read ? 'border-l-4 border-green-500 bg-green-50' : ''
                 }`}
               >
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 mt-1">
-                    <Bell className={`w-5 h-5 ${n.read ? 'text-gray-400' : 'text-red-600'}`} />
+                    <Bell className={`w-5 h-5 ${n.read ? 'text-gray-400' : 'text-green-600'}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
@@ -676,7 +749,7 @@ const SuperAdminNotifications = () => {
                         <h3 className={`text-sm font-medium ${!n.read ? 'text-gray-900' : 'text-gray-700'}`}>{n.title}</h3>
                         {!grouped && <p className="text-sm text-gray-600 mt-1">{n.message}</p>}
                         {grouped && components.length > 0 && (
-                          <ul className="mt-2 list-disc list-inside text-xs text-gray-700 bg-red-50 rounded p-2 border border-red-100">
+                          <ul className="mt-2 list-disc list-inside text-xs text-gray-700 bg-green-50 rounded p-2 border border-green-100">
                             {components.map((comp, idx) => (
                               <li key={idx}>{comp}</li>
                             ))}
@@ -690,7 +763,7 @@ const SuperAdminNotifications = () => {
                         {!n.read && (
                           <button
                             onClick={() => markAsRead(n.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                            className="p-1 text-gray-400 hover:text-green-600 transition-colors"
                             title="Mark as read"
                           >
                             <Check className="w-4 h-4" />
@@ -698,7 +771,7 @@ const SuperAdminNotifications = () => {
                         )}
                         <button
                           onClick={() => deleteNotification(n.id)}
-                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                          className="p-1 text-gray-400 hover:text-green-600 transition-colors"
                           title="Delete notification"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1054,6 +1127,28 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
     }
   };
 
+  // Handler for deleting users
+  const handleDeleteUser = async (userId) => {
+    try {
+      const response = await authorizedFetch(`${API_BASE}/index.php?endpoint=delete_user`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: userId })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        alert('User deleted successfully');
+      } else {
+        alert(result.error || 'Failed to delete user');
+      }
+    } catch (e) {
+      alert('Error deleting user');
+    }
+  };
+
   const UserManagement = (props) => {
     // ... rest of the code remains the same ...
 
@@ -1104,7 +1199,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
@@ -1138,7 +1233,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
           <div className="p-6 space-y-6">
             {/* Header styled like Supplier Management */}
             <div className="flex items-center gap-4">
-              <Users className="h-10 w-10 text-indigo-500" />
+              <Users className="h-10 w-10 text-green-500" />
               <div>
                 <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Users</h2>
                 <p className="text-gray-500 text-base mt-1">Create and manage users, roles, status, and access permissions.</p>
@@ -1148,7 +1243,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
             {/* Actions */}
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">Total users: {Array.isArray(users) ? users.length : 0}</div>
-              <button className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg hover:shadow-xl flex items-center gap-2 font-semibold" onClick={() => setShowCreateUserModal(true)}>
+              <button className="bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 transition-colors shadow-lg hover:shadow-xl flex items-center gap-2 font-semibold" onClick={() => setShowCreateUserModal(true)}>
                 <UserPlus className="h-4 w-4" />
                 Create User
               </button>
@@ -1167,6 +1262,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
                     <th>Inventory</th>
                     <th>Orders</th>
                     <th>Chat Support</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1200,7 +1296,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
                           const active = Number(u.can_access_inventory) === 1;
                           return (
                             <button
-                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${active ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${active ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
                               onClick={() => {
                                 const action = active ? 'disable' : 'enable';
                                 const name = u.username || `User #${u.id}`;
@@ -1220,7 +1316,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
                           const active = Number(u.can_access_orders) === 1;
                           return (
                             <button
-                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${active ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${active ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
                               onClick={() => {
                                 const action = active ? 'disable' : 'enable';
                                 const name = u.username || `User #${u.id}`;
@@ -1240,7 +1336,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
                           const active = Number(u.can_access_chat_support) === 1;
                           return (
                             <button
-                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${active ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${active ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' : 'bg-green-600 text-white hover:bg-green-700'}`}
                               onClick={() => {
                                 const action = active ? 'disable' : 'enable';
                                 const name = u.username || `User #${u.id}`;
@@ -1255,10 +1351,36 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
                           );
                         })()}
                       </td>
+                      <td>
+                        {(() => {
+                          // Only allow deletion of Admin and Employee accounts, not Super Admin
+                          const userRoles = Array.isArray(u.roles) ? u.roles : (typeof u.roles === 'string' ? u.roles.split(',') : []);
+                          const canDelete = userRoles.some(role => ['Admin', 'Employee'].includes(role.trim()));
+                          
+                          if (!canDelete) {
+                            return <span className="text-gray-400 text-sm">Protected</span>;
+                          }
+                          
+                          return (
+                            <button
+                              className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+                              onClick={() => {
+                                const name = u.username || `User #${u.id}`;
+                                if (window.confirm(`Are you sure you want to delete user "${name}"? This action cannot be undone.`)) {
+                                  handleDeleteUser(u.id);
+                                }
+                              }}
+                              title="Delete User"
+                            >
+                              Delete
+                            </button>
+                          );
+                        })()}
+                      </td>
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan="7" className="empty-state">No users found.</td>
+                      <td colSpan="8" className="empty-state">No users found.</td>
                     </tr>
                   )}
                 </tbody>
@@ -1317,7 +1439,7 @@ const SuperAdminDashboard = ({ initialTab = 'dashboard', user, setUser }) => {
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
                       <button type="button" onClick={() => setShowCreateUserModal(false)} className="px-4 py-2 border rounded">Cancel</button>
-                      <button type="submit" className="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Create</button>
+                      <button type="submit" className="px-5 py-2 bg-green-600 text-white rounded hover:bg-green-700">Create</button>
                     </div>
                   </form>
                 </div>
@@ -1475,10 +1597,10 @@ function CreateOrderForm({ inventory = [], onCancel = () => {}, onCreated = () =
               {inventory.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
             <input type="number" min={1} className="col-span-3 border rounded px-3 py-2" value={it.quantity} onChange={e => updateLine(idx, { quantity: e.target.value })} />
-            <button type="button" className="col-span-2 text-red-600" onClick={() => removeLine(idx)}>Remove</button>
+            <button type="button" className="col-span-2 text-green-600" onClick={() => removeLine(idx)}>Remove</button>
           </div>
         ))}
-        <button type="button" className="text-blue-600" onClick={addLine}>+ Add Item</button>
+        <button type="button" className="text-green-600" onClick={addLine}>+ Add Item</button>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>

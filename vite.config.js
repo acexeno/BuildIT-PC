@@ -3,14 +3,22 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // Use relative base so built assets work under subpaths (e.g., /capstone2/backend/public)
-  base: './',
+  // Use root base path for production deployment
+  base: '/',
   root: '.',
   plugins: [react()],
   build: {
     outDir: 'backend/public',
-    emptyOutDir: false,
+    emptyOutDir: true,
     assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        // Ensure consistent asset paths
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js'
+      }
+    }
   },
   server: {
     port: 5175,

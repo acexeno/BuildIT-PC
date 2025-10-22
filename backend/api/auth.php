@@ -222,12 +222,12 @@ function handleLogin($pdo) {
         return;
     }
     
-    // Rate limiting placeholder: enable in production to slow brute-force attempts
-    // if (!checkLoginRateLimit($pdo, $username, (int)env('LOGIN_MAX_ATTEMPTS', 5), (int)env('LOGIN_LOCKOUT_TIME', 900))) {
-    //     http_response_code(429);
-    //     echo json_encode(['error' => 'Too many login attempts. Please try again later.']);
-    //     return;
-    // }
+    // Rate limiting enabled for security
+    if (!checkLoginRateLimit($pdo, $username, (int)env('LOGIN_MAX_ATTEMPTS', 5), (int)env('LOGIN_LOCKOUT_TIME', 900))) {
+        http_response_code(429);
+        echo json_encode(['error' => 'Too many login attempts. Please try again later.']);
+        return;
+    }
     
     // Fetch user plus roles in one query
     $stmt = $pdo->prepare("

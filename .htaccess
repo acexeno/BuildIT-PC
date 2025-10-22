@@ -1,58 +1,43 @@
-# Root .htaccess for Hostinger (Apache)
-# - Protect sensitive files
-# - Pass Authorization header to PHP
-# - Correct MIME types for JS/CSS/WASM/JSON/SVG
-# - Route SPA requests to dist/index.html
-# - Do not rewrite backend API requests
+# Enable rewrite engine
+RewriteEngine On
 
-Options -Indexes -MultiViews
-
-# Ensure a default index at the root points to the built SPA
-DirectoryIndex dist/index.html
-
-# Ensure correct MIME types (Hostinger sometimes defaults to text/plain)
+# Set proper MIME types for JavaScript and CSS files
 <IfModule mod_mime.c>
-  AddType application/javascript .js .mjs
-  AddType text/css .css
-  AddType application/wasm .wasm
-  AddType application/json .json
-  AddType image/svg+xml .svg
-  AddType application/manifest+json .webmanifest .manifest
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType application/json .json
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
 </IfModule>
 
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-
-  # Pass Authorization header
-  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
-  RewriteCond %{HTTP:Authorization} ^(.*)
-  RewriteRule ^(.*)$ - [E=HTTP_AUTHORIZATION:%1]
-
-  # Deny access to environment files
-  <Files ".env">
-    Require all denied
-  </Files>
-
-  # Do not rewrite backend requests
-  RewriteCond %{REQUEST_URI} ^/backend/ [NC]
-  RewriteRule ^ - [L]
-
-  # If deploying with build inside dist/, map /assets and /images to dist/
-  RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
-  RewriteRule ^images/(.*)$ dist/images/$1 [L]
-
-  # Never rewrite static asset folders (prevents SPA fallback from hijacking them)
-  RewriteRule ^(assets|images|css|js|fonts|static)/ - [L]
-
-  # Serve existing files directly
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  # Root path -> SPA entry
-  RewriteRule ^$ dist/index.html [L]
-
-  # All other routes go to the SPA entry (handles client-side routing)
-  RewriteRule ^ dist/index.html [L]
+# Enable compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
 </IfModule>
+
+# Set cache headers for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>
+
+# Handle React Router (SPA routing) - serve index.html for all routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]

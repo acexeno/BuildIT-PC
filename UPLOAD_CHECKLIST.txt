@@ -1,0 +1,47 @@
+HOSTINGER UPLOAD CHECKLIST
+==========================
+
+FILES TO UPLOAD TO HOSTINGER:
+
+1. FRONTEND FILES (Upload to public_html/ root):
+   ✅ backend/public/index.html
+   ✅ backend/public/assets/ (entire folder)
+   ✅ backend/public/images/ (entire folder)
+
+2. BACKEND FILES (Upload to public_html/backend/):
+   ✅ backend/config/database.php
+   ✅ backend/config/database_local.php
+   ✅ backend/config/mail_local.php
+   ✅ backend/config/mail_hostinger.php
+   ✅ backend/utils/mailer.php
+   ✅ backend/test_environment.php
+   ✅ backend/test_connection.php
+   ✅ backend/test_mail_config.php
+
+3. TESTING URLs AFTER UPLOAD:
+   ✅ https://egiesims.shop (main app)
+   ✅ https://egiesims.shop/backend/test_environment.php
+   ✅ https://egiesims.shop/backend/test_connection.php
+   ✅ https://egiesims.shop/backend/test_mail_config.php
+
+WHAT'S FIXED:
+✅ Real-time notifications (5-second updates)
+✅ Admin dashboard no longer blinks
+✅ Green color scheme throughout
+✅ Environment detection (local vs production)
+✅ Database connection works for both environments
+✅ Mail configuration works for both environments
+
+UPLOAD ORDER:
+1. Build React app (already done)
+2. Upload frontend files to public_html/
+3. Upload backend files to public_html/backend/
+4. Test all URLs
+5. Verify everything works
+
+
+
+
+
+
+

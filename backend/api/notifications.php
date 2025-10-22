@@ -161,7 +161,8 @@ function generateStockNotifications($pdo) {
 
 // Get user notifications
 function handleGetNotifications($pdo) {
-    // generateStockNotifications($pdo); // Removed to prevent duplicate notifications on fetch
+    // Generate stock notifications in real-time on each fetch
+    generateStockNotifications($pdo);
     $userId = getUserIdFromRequest();
     if (!$userId) {
         http_response_code(401);

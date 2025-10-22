@@ -3,12 +3,50 @@
 require_once __DIR__ . '/env.php';
 
 function get_db_connection() {
+    // Detect local environment
+    $isLocal = false;
+    $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+    $appEnv = env('APP_ENV', '');
+    
+    // Check if we're running locally
+    if ($host && (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false)) {
+        $isLocal = true;
+    }
+    
+    // Also check APP_ENV
+    if ($appEnv && strtolower($appEnv) === 'local') {
+        $isLocal = true;
+    }
+    
+    // Check for local marker file
+    $root = dirname(__DIR__, 2);
+    if (is_file($root . DIRECTORY_SEPARATOR . '.use_env_local')) {
+        $isLocal = true;
+    }
+    
+    if ($isLocal) {
+        // Use local database configuration
+        require_once __DIR__ . '/database_local.php';
+        return get_local_db_connection();
+    }
+    
+    // Production configuration
     $host = env('DB_HOST', 'localhost');
     $db   = env('DB_NAME', 'builditpc_db');
     $user = env('DB_USER', 'root');
     $pass = env('DB_PASS', '');
     $port = env('DB_PORT', '3306');
     $charset = env('DB_CHARSET', 'utf8mb4');
+    
+    // If using default credentials, use Hostinger credentials directly
+    if ($user === 'root' && $pass === '') {
+        $host = 'localhost';
+        $db   = 'u709288172_builditpc_db';
+        $user = 'u709288172_sims';
+        $pass = 'Egiesims1@';
+        $port = '3306';
+        $charset = 'utf8mb4';
+    }
 
     $makeDsn = function($h, $d, $p, $c) {
         $portPart = $p ? ";port=$p" : '';

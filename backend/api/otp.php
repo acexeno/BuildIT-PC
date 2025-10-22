@@ -38,22 +38,23 @@ function findUserByEmail(PDO $pdo, string $email): ?array {
 }
 
 function handleOtpRequest(PDO $pdo) {
-    // Robust request parsing: JSON, form-encoded, or raw
-    $raw = file_get_contents('php://input');
-    $input = [];
-    if (is_string($raw) && $raw !== '') {
-        $json = json_decode($raw, true);
-        if (is_array($json)) {
-            $input = $json;
-        } else {
-            // Try to parse urlencoded key=value pairs from raw body
-            $tmp = [];
-            parse_str($raw, $tmp);
-            if (is_array($tmp) && !empty($tmp)) {
-                $input = $tmp;
+    try {
+        // Robust request parsing: JSON, form-encoded, or raw
+        $raw = file_get_contents('php://input');
+        $input = [];
+        if (is_string($raw) && $raw !== '') {
+            $json = json_decode($raw, true);
+            if (is_array($json)) {
+                $input = $json;
+            } else {
+                // Try to parse urlencoded key=value pairs from raw body
+                $tmp = [];
+                parse_str($raw, $tmp);
+                if (is_array($tmp) && !empty($tmp)) {
+                    $input = $tmp;
+                }
             }
         }
-    }
     // Fallback to $_POST if still empty
     if (empty($input) && !empty($_POST)) {
         $input = $_POST;
@@ -189,6 +190,10 @@ function handleOtpRequest(PDO $pdo) {
         'ttl_minutes' => (int)$ttlMin,
         'cooldown_seconds' => (int)$cooldownSec
     ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+    }
 }
 
 function handleOtpVerify(PDO $pdo) {

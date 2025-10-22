@@ -2,7 +2,8 @@
 require_once __DIR__ . '/../config/cors.php';
 require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/../config/security.php';
-// require_once __DIR__ . '/../middleware/simple_security_middleware.php';
+require_once __DIR__ . '/../config/enhanced_security.php';
+require_once __DIR__ . '/../middleware/auth_middleware.php';
 
 // Ensure application timezone is set (default to Philippines)
 $appTz = env('APP_TIMEZONE', 'Asia/Manila');
@@ -84,8 +85,9 @@ set_exception_handler(function($exception) {
 require_once __DIR__ . '/../config/database.php';
 $pdo = get_db_connection();
 
-// Initialize simple security middleware (temporarily disabled)
-// initSimpleSecurityMiddleware($pdo);
+// Initialize enhanced security middleware
+initEnhancedSecurity($pdo);
+initAuthMiddleware($pdo);
 
 require_once __DIR__ . '/../utils/jwt_helper.php';
 require_once __DIR__ . '/../utils/branch_helper.php';
@@ -587,6 +589,198 @@ switch ($endpoint) {
                 $ins->execute([$userId, $r['id']]);
             }
             echo json_encode(['success'=>true]);
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
+    case 'delete_user':
+        if ($method === 'DELETE') {
+            // Verify Super Admin access
+            $headers = function_exists('getallheaders') ? getallheaders() : [];
+            $authHeader = $headers['Authorization'] ?? ($headers['authorization'] ?? null);
+            if (!$authHeader) { http_response_code(401); echo json_encode(['success'=>false,'error'=>'Unauthorized']); break; }
+            $token = preg_replace('/^Bearer\s+/i','',$authHeader);
+            $decoded = verifyJWT($token);
+            if (!$decoded) { http_response_code(401); echo json_encode(['success'=>false,'error'=>'Invalid token']); break; }
+            $roles = $decoded['roles'] ?? [];
+            if (is_string($roles)) $roles = explode(',', $roles);
+            if (!in_array('Super Admin', $roles)) { http_response_code(403); echo json_encode(['success'=>false,'error'=>'Forbidden']); break; }
+            
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+            $userId = isset($input['user_id']) ? (int)$input['user_id'] : 0;
+            if ($userId <= 0) { http_response_code(400); echo json_encode(['success'=>false,'error'=>'Invalid user ID']); break; }
+            
+            // Prevent deletion of Super Admin accounts
+            $stmt = $pdo->prepare('SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ? AND r.name = "Super Admin"');
+            $stmt->execute([$userId]);
+            if ($stmt->fetch()) { http_response_code(403); echo json_encode(['success'=>false,'error'=>'Cannot delete Super Admin accounts']); break; }
+            
+            // Delete user (cascade will handle related records)
+            $stmt = $pdo->prepare('DELETE FROM users WHERE id = ?');
+            $stmt->execute([$userId]);
+            if ($stmt->rowCount() > 0) {
+                echo json_encode(['success'=>true, 'message'=>'User deleted successfully']);
+            } else {
+                http_response_code(404);
+                echo json_encode(['success'=>false,'error'=>'User not found']);
+            }
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
+    case 'forgot_password':
+        if ($method === 'POST') {
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+            $email = trim($input['email'] ?? '');
+            
+            if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Valid email address is required']);
+                break;
+            }
+            
+            // Only allow Gmail accounts
+            if (!preg_match('/^[^@]+@gmail\.com$/i', $email)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Only Gmail accounts are allowed for password reset']);
+                break;
+            }
+            
+            try {
+                // Check if user exists
+                $stmt = $pdo->prepare('SELECT id, username, email FROM users WHERE email = ? AND is_active = 1');
+                $stmt->execute([$email]);
+                $user = $stmt->fetch();
+                
+                if (!$user) {
+                    // Don't reveal if email exists or not for security
+                    echo json_encode(['success' => true, 'message' => 'If an account with that email exists, password reset instructions have been sent.']);
+                    break;
+                }
+                
+                // Generate reset token
+                $resetToken = bin2hex(random_bytes(32));
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour')); // Token expires in 1 hour
+                
+                // Store reset token in database
+                $stmt = $pdo->prepare('INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token), expires_at = VALUES(expires_at)');
+                $stmt->execute([$email, $resetToken, $expiresAt]);
+                
+                // Send email with reset link using the mailer utility
+                require_once __DIR__ . '/../utils/mailer.php';
+                
+                $resetLink = "http://localhost:5175/?token=" . $resetToken;
+                $subject = "Password Reset Request - SIMS";
+                
+                $htmlMessage = "
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <h2 style='color: #16a34a; text-align: center;'>SIMS Password Reset</h2>
+                    <p>Hello " . htmlspecialchars($user['username']) . ",</p>
+                    <p>You requested a password reset for your SIMS account.</p>
+                    <p>Click the button below to reset your password:</p>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='" . $resetLink . "' style='background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;'>Reset Password</a>
+                    </div>
+                    <p>Or copy and paste this link into your browser:</p>
+                    <p style='word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 4px;'>" . $resetLink . "</p>
+                    <p><strong>This link will expire in 1 hour.</strong></p>
+                    <p>If you didn't request this reset, please ignore this email.</p>
+                    <hr style='margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;'>
+                    <p style='color: #6b7280; font-size: 14px;'>Best regards,<br>SIMS Team</p>
+                </div>";
+                
+                $textMessage = "Hello " . $user['username'] . ",\n\n";
+                $textMessage .= "You requested a password reset for your SIMS account.\n\n";
+                $textMessage .= "Click the link below to reset your password:\n";
+                $textMessage .= $resetLink . "\n\n";
+                $textMessage .= "This link will expire in 1 hour.\n\n";
+                $textMessage .= "If you didn't request this reset, please ignore this email.\n\n";
+                $textMessage .= "Best regards,\nSIMS Team";
+                
+                // Send the email
+                [$emailSent, $emailError] = sendMailGmail($email, $subject, $htmlMessage, $textMessage);
+                
+                if (!$emailSent) {
+                    error_log("Failed to send password reset email to $email: $emailError");
+                    // Still return success to user for security (don't reveal email sending issues)
+                }
+                
+                echo json_encode(['success' => true, 'message' => 'Password reset instructions have been sent to your email.']);
+                
+            } catch (Exception $e) {
+                error_log("Forgot password error: " . $e->getMessage());
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Internal server error']);
+            }
+        } else {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method Not Allowed']);
+        }
+        break;
+
+    case 'reset_password':
+        if ($method === 'POST') {
+            $input = json_decode(file_get_contents('php://input'), true) ?: [];
+            $token = trim($input['token'] ?? '');
+            $password = trim($input['password'] ?? '');
+            
+            if (empty($token) || empty($password)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Token and password are required']);
+                break;
+            }
+            
+            if (strlen($password) < 6) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Password must be at least 6 characters long']);
+                break;
+            }
+            
+            try {
+                // Verify token and get user
+                $stmt = $pdo->prepare('SELECT pr.email, pr.expires_at FROM password_resets pr WHERE pr.token = ? AND pr.expires_at > NOW() AND pr.used_at IS NULL');
+                $stmt->execute([$token]);
+                $reset = $stmt->fetch();
+                
+                if (!$reset) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'Invalid or expired reset token']);
+                    break;
+                }
+                
+                // Get user by email
+                $stmt = $pdo->prepare('SELECT id, username FROM users WHERE email = ? AND is_active = 1');
+                $stmt->execute([$reset['email']]);
+                $user = $stmt->fetch();
+                
+                if (!$user) {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'error' => 'User not found']);
+                    break;
+                }
+                
+                // Hash new password
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                
+                // Update user password
+                $stmt = $pdo->prepare('UPDATE users SET password = ? WHERE id = ?');
+                $stmt->execute([$hashedPassword, $user['id']]);
+                
+                // Mark token as used
+                $stmt = $pdo->prepare('UPDATE password_resets SET used_at = NOW() WHERE token = ?');
+                $stmt->execute([$token]);
+                
+                echo json_encode(['success' => true, 'message' => 'Password reset successfully']);
+                
+            } catch (Exception $e) {
+                error_log("Reset password error: " . $e->getMessage());
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Internal server error']);
+            }
         } else {
             http_response_code(405);
             echo json_encode(['error' => 'Method Not Allowed']);

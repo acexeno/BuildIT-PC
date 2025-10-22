@@ -14,6 +14,8 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
   const [otpMode, setOtpMode] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -159,6 +161,44 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
     }
   };
 
+  // Handle forgot password request
+  const handleForgotPassword = async () => {
+    setError('');
+    setInfo('');
+    const emailForReset = (formData.username || '').trim();
+    if (!emailForReset || !emailForReset.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    
+    // Check if it's a Gmail account
+    const isGmail = /^[^@]+@gmail\.com$/i.test(emailForReset);
+    if (!isGmail) {
+      setError('Only Gmail accounts are allowed for password reset.');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/index.php?endpoint=forgot_password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailForReset })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResetEmailSent(true);
+        setInfo('Password reset instructions sent to your Gmail.');
+      } else {
+        setError(data.error || 'Failed to send reset instructions');
+      }
+    } catch (e) {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -184,7 +224,7 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
           <div className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                {otpMode ? 'Email Address' : 'Username or Email'}
+                {otpMode ? 'Gmail Address' : forgotPasswordMode ? 'Gmail Address' : 'Username or Email'}
               </label>
               <input
                 id="username"
@@ -193,12 +233,12 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
                 autoComplete={otpMode ? 'email' : 'username'}
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                placeholder={otpMode ? 'Enter your email address' : 'Enter your username or email'}
+                placeholder={otpMode ? 'Enter your Gmail address' : forgotPasswordMode ? 'Enter your Gmail address' : 'Enter your username or email'}
                 value={formData.username}
                 onChange={handleChange}
               />
             </div>
-            {!otpMode && (
+            {!otpMode && !forgotPasswordMode && (
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
@@ -251,28 +291,79 @@ const Login = ({ onLogin, onSwitchToRegister }) => {
                 )}
               </div>
             )}
+            {forgotPasswordMode && (
+              <div className="space-y-3">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Enter your Gmail address and we'll send you instructions to reset your password.
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Only Gmail accounts are supported for password reset.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                    className={`px-4 py-2 text-sm font-medium rounded-md text-white ${
+                      loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {loading ? 'Sending...' : 'Send Reset Instructions'}
+                  </button>
+                  {info && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm">
+                      {info}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div className="space-y-3">
-            <button
-              type="submit"
-              disabled={loading || (otpMode && !otpSent)}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-              }`}
-            >
-              {loading ? (otpMode ? 'Verifying...' : 'Signing in...') : (otpMode ? 'Verify & Sign in' : 'Sign in')}
-            </button>
-            <div className="text-center">
+            {!forgotPasswordMode && (
               <button
-                type="button"
-                onClick={() => { setOtpMode(!otpMode); setError(''); setInfo(''); setOtpSent(false); setOtpCode(''); }}
-                className="text-sm text-green-600 hover:text-green-500"
+                type="submit"
+                disabled={loading || (otpMode && !otpSent)}
+                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                  loading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
+                }`}
               >
-                {otpMode ? 'Use password instead' : 'Use OTP instead'}
+                {loading ? (otpMode ? 'Verifying...' : 'Signing in...') : (otpMode ? 'Verify & Sign in' : 'Sign in')}
               </button>
-            </div>
+            )}
+            {!forgotPasswordMode && (
+              <div className="text-center space-y-2">
+                <button
+                  type="button"
+                  onClick={() => { setOtpMode(!otpMode); setError(''); setInfo(''); setOtpSent(false); setOtpCode(''); }}
+                  className="text-sm text-green-600 hover:text-green-500"
+                >
+                  {otpMode ? 'Use password instead' : 'Use OTP instead'}
+                </button>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => { setForgotPasswordMode(true); setError(''); setInfo(''); setOtpMode(false); setOtpSent(false); setOtpCode(''); }}
+                    className="text-sm text-gray-600 hover:text-gray-500"
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
+              </div>
+            )}
+            {forgotPasswordMode && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setForgotPasswordMode(false); setError(''); setInfo(''); setResetEmailSent(false); }}
+                  className="text-sm text-green-600 hover:text-green-500"
+                >
+                  Back to login
+                </button>
+              </div>
+            )}
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-600">

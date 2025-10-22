@@ -111,6 +111,7 @@ async function doRefresh() {
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('auth:login-required'))
       }
+      return null
     }
   } catch (error) {
     console.error('Token refresh error:', error)

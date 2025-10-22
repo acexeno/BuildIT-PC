@@ -56,23 +56,25 @@ export const NotificationProvider = ({ children, user }) => {
   // Load notifications when user changes
   useEffect(() => {
     if (user && user.id && hasNotificationAccess(user)) {
+      // Initial load
       loadNotifications()
       loadUnreadCount()
-      // Poll unread count every 10 seconds (reduced frequency to avoid auth issues)
-      if (pollRef.current) {
-        clearInterval(pollRef.current)
-        pollRef.current = null
-      }
-      // Add initial delay to let authentication stabilize
-      setTimeout(() => {
-        pollRef.current = setInterval(() => {
-          loadUnreadCount()
-        }, 10000)
-      }, 2000)
+      
+      // Set up polling for real-time updates (every 5 seconds for notifications, 10 seconds for unread count)
+      const notificationInterval = setInterval(() => {
+        loadNotifications()
+      }, 5000);
+      
+      const unreadInterval = setInterval(() => {
+        loadUnreadCount()
+      }, 10000);
+      
       return () => {
-        if (pollRef.current) {
-          clearInterval(pollRef.current)
-          pollRef.current = null
+        if (notificationInterval) {
+          clearInterval(notificationInterval)
+        }
+        if (unreadInterval) {
+          clearInterval(unreadInterval)
         }
       }
     } else {
@@ -138,6 +140,7 @@ export const NotificationProvider = ({ children, user }) => {
           clearInterval(pollRef.current)
           pollRef.current = null
         }
+        setLoading(false)
         return
       }
 

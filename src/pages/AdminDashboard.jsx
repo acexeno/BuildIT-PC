@@ -21,11 +21,13 @@ import {
   Monitor,
   Bell,
   FileText,
-  X
+  X,
+  Download
 } from 'lucide-react'
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { getComponentImage } from '../utils/componentImages';
 import { formatCurrencyPHP } from '../utils/currency';
+import { exportFilteredInventory } from '../utils/exportUtils';
 import AdminPCAssembly from './AdminPCAssembly';
 import SuperAdminPrebuiltPCs from './SuperAdminPrebuiltPCs.jsx';
 import Notifications from './Notifications.jsx';
@@ -471,24 +473,23 @@ const AdminDashboard = ({ initialTab, user }) => {
   }, [initialTab])
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
+    const fetchData = async (showLoading = false) => {
+      if (showLoading) setIsLoading(true);
       setError(null);
       try {
         // Wait for authentication to be ready
         let token = await waitForAuth();
         if (!token) {
           setError('Session expired. Please log in again.');
-          setIsLoading(false);
+          if (showLoading) setIsLoading(false);
           return;
         }
         
-        console.log('Fetching dashboard data...');
         const response = await authorizedFetch(`${API_BASE}/index.php?endpoint=dashboard&period=${deadstockPeriod}${branch ? `&branch=${branch}` : ''}`);
 
         if (response.status === 401) {
           setError('Authentication failed. Please log in again.');
-          setIsLoading(false);
+          if (showLoading) setIsLoading(false);
           return;
         }
 
@@ -507,7 +508,6 @@ const AdminDashboard = ({ initialTab, user }) => {
           setInventory(data.inventory || []);
           setOrders(data.orders || []);
           setReports(data.reports || {});
-          console.log('Dashboard data loaded successfully');
         } else {
           console.error('API error:', result.error);
           setError(result.error || 'API call was not successful');
@@ -516,15 +516,19 @@ const AdminDashboard = ({ initialTab, user }) => {
         console.error("Error fetching admin dashboard data:", error);
         setError('Error fetching admin dashboard data.');
       } finally {
-        setIsLoading(false);
+        if (showLoading) setIsLoading(false);
       }
     };
 
-    // Add a small delay before initial fetch to ensure login is complete
-    const timeoutId = setTimeout(fetchData, 200);
-    const interval = setInterval(fetchData, 10000);
+    // Initial load with loading spinner
+    fetchData(true);
+
+    // Polling every 30 seconds (increased from 10 seconds to reduce blinking)
+    const interval = setInterval(() => {
+      fetchData(false);
+    }, 30000);
+
     return () => {
-      clearTimeout(timeoutId);
       clearInterval(interval);
     };
   }, []);
@@ -744,6 +748,40 @@ const AdminDashboard = ({ initialTab, user }) => {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedBrand, setSelectedBrand] = useState('all');
     const [sortBy, setSortBy] = useState('name');
+    const [showExportDropdown, setShowExportDropdown] = useState(false);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (showExportDropdown && !event.target.closest('.export-dropdown')) {
+          setShowExportDropdown(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, [showExportDropdown]);
+
+    // Export functionality
+    const handleExport = (format) => {
+      const exportedCount = exportFilteredInventory(
+        inventory,
+        searchTerm,
+        selectedCategory,
+        selectedBrand,
+        categories,
+        format
+      );
+      
+      if (exportedCount > 0) {
+        alert(`Successfully exported ${exportedCount} items to ${format.toUpperCase()} format.`);
+      } else {
+        alert('No items match the current filters to export.');
+      }
+    };
+
     // Main component types for dropdown
     const mainCategories = [
       { key: 'CPU', names: ['CPU', 'Procie Only', 'Pro & Mobo - Amd', 'Pro & Mobo - Intel'] },
@@ -842,6 +880,42 @@ const AdminDashboard = ({ initialTab, user }) => {
                 Marikina
               </button>
             </div>
+          </div>
+          {/* Export Dropdown */}
+          <div className="relative export-dropdown">
+            <button 
+              className="bg-gray-600 text-white px-5 py-2 rounded-xl hover:bg-gray-700 flex items-center gap-2 shadow-lg"
+              onClick={() => setShowExportDropdown(!showExportDropdown)}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+            {showExportDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      handleExport('csv');
+                      setShowExportDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export as CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleExport('excel');
+                      setShowExportDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export as Excel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           {/* Admin and Superadmin can create */}
           <button

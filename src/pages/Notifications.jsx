@@ -65,7 +65,7 @@ const Notifications = ({ user }) => {
       case 'medium':
         return 'border-l-orange-500'
       case 'low':
-        return 'border-l-blue-500'
+        return 'border-l-green-500'
       default:
         return 'border-l-gray-500'
     }

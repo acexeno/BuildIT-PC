@@ -27,9 +27,9 @@ const Sidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabCha
   const getRoleColor = () => {
     if (!user?.roles) return 'bg-gray-500';
     
-    if (user.roles.includes('Super Admin')) return 'bg-red-500';
-    if (user.roles.includes('Admin')) return 'bg-purple-500';
-    if (user.roles.includes('Employee')) return 'bg-blue-500';
+    if (user.roles.includes('Super Admin')) return 'bg-green-500';
+    if (user.roles.includes('Admin')) return 'bg-green-500';
+    if (user.roles.includes('Employee')) return 'bg-green-500';
     return 'bg-green-500';
   };
 
@@ -248,7 +248,7 @@ const Sidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminTabCha
               <Bell className="mr-3 h-5 w-5" />
               Notifications
               {unreadCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">{unreadCount}</span>
+                <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-500 text-white">{unreadCount}</span>
               )}
             </button>
           </>

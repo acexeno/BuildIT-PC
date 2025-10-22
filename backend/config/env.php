@@ -85,6 +85,38 @@ if (!defined('ENV_LOADED')) {
 
     if ($isLocal) {
         $load_env_file($envLocalPath, true);
+        
+        // Always load mail_local.php configuration for local development
+        $mailLocalPath = __DIR__ . '/mail_local.php';
+        if (is_readable($mailLocalPath)) {
+            require_once $mailLocalPath;
+            if (function_exists('get_local_mail_config')) {
+                $mailConfig = get_local_mail_config();
+                foreach ($mailConfig as $key => $value) {
+                    if (env($key, '') === '') {
+                        $_ENV[$key] = $value;
+                        putenv($key . '=' . $value);
+                    }
+                }
+            }
+        }
+        
+        // Set local environment variables if .env.local doesn't exist
+        if (!is_readable($envLocalPath)) {
+            $_ENV['APP_ENV'] = 'local';
+            $_ENV['APP_DEBUG'] = '1';
+            $_ENV['DB_HOST'] = 'localhost';
+            $_ENV['DB_NAME'] = 'builditpc_db';
+            $_ENV['DB_USER'] = 'root';
+            $_ENV['DB_PASS'] = '';
+            $_ENV['DB_PORT'] = '3306';
+            $_ENV['MAIL_AUTH'] = 'gmail_password';
+            $_ENV['GMAIL_USER'] = 'kenniellmart@gmail.com';
+            $_ENV['GMAIL_APP_PASSWORD'] = 'rtwudoaenolfzjsr';
+            $_ENV['MAIL_FAKE'] = '0';
+            $_ENV['OTP_REQUEST_COOLDOWN'] = '60';
+            $_ENV['OTP_TTL_MINUTES'] = '5';
+        }
     }
 }
 

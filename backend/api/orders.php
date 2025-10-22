@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/jwt_helper.php';
 require_once __DIR__ . '/../utils/branch_helper.php';
 require_once __DIR__ . '/notifications.php';
+require_once __DIR__ . '/stock_notification_trigger.php';
 require_once __DIR__ . '/auth.php'; // for getBearerToken()
 
 header('Content-Type: application/json');
@@ -145,6 +146,8 @@ function handleCreateOrder($pdo) {
                 $newTotal = recalc_total_stock($pdo, $ni['component_id']);
                 // Create inventory alert on total stock
                 insertInventoryAlertIfNeeded($pdo, $ni['component'], $newTotal, 'Auto-generated from order #' . $orderId . ' (branch)');
+                // Generate real-time stock notification for this component
+                generateComponentStockNotification($pdo, $ni['component_id'], (int)$ni['component']['stock_quantity'], $newTotal);
             } else {
                 // Fallback: global decrement (backward compatible)
                 $currentStock = (int)$ni['component']['stock_quantity'];
@@ -152,10 +155,12 @@ function handleCreateOrder($pdo) {
                 $updStock->execute([$newStock, $ni['component_id']]);
                 // Create inventory alert if needed
                 insertInventoryAlertIfNeeded($pdo, $ni['component'], $newStock, 'Auto-generated from order #' . $orderId);
+                // Generate real-time stock notification for this component
+                generateComponentStockNotification($pdo, $ni['component_id'], $currentStock, $newStock);
             }
         }
 
-        // Generate grouped stock notifications for Admin/Employee
+        // Generate grouped stock notifications for Admin/Employee (backup)
         try { generateStockNotifications($pdo); } catch (Exception $e) { /* ignore */ }
 
         $pdo->commit();

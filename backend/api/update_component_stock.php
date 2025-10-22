@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/branch_helper.php';
 require_once __DIR__ . '/notifications.php';
+require_once __DIR__ . '/stock_notification_trigger.php';
 
 $pdo = get_db_connection();
 
@@ -23,6 +24,11 @@ try {
     $componentId = (int)$componentId;
     $newStock = (int)$newStock;
 
+    // Get current stock for comparison
+    $stmt = $pdo->prepare("SELECT stock_quantity FROM components WHERE id = ?");
+    $stmt->execute([$componentId]);
+    $oldStock = (int)$stmt->fetchColumn();
+
     $branchId = null;
     if ($branchIdParam && is_numeric($branchIdParam)) {
         $branchId = (int)$branchIdParam;
@@ -34,15 +40,15 @@ try {
         // Update branch-specific stock, then recalc total into components.stock_quantity
         upsert_branch_stock($pdo, $componentId, $branchId, $newStock);
         $total = recalc_total_stock($pdo, $componentId);
-        // Generate stock notifications after updating stock (based on total)
-        generateStockNotifications($pdo);
+        // Generate real-time stock notifications for this specific component
+        generateComponentStockNotification($pdo, $componentId, $oldStock, $total);
         echo json_encode(['success' => true, 'message' => 'Branch stock updated', 'branch_id' => $branchId, 'branch' => ($branchCode ?? null), 'total_stock' => $total]);
     } else {
         // Global update (backward compatible)
         $stmt = $pdo->prepare("UPDATE components SET stock_quantity = ? WHERE id = ?");
         $stmt->execute([$newStock, $componentId]);
-        // Optionally, if there are branch rows, proportionally adjust? For now, leave as-is; admins should use branch param.
-        generateStockNotifications($pdo);
+        // Generate real-time stock notifications for this specific component
+        generateComponentStockNotification($pdo, $componentId, $oldStock, $newStock);
         echo json_encode(['success' => true, 'message' => 'Global stock updated']);
     }
 } catch (Exception $e) {

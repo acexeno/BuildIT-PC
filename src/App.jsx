@@ -29,6 +29,7 @@ import CompatibilityGuide from './pages/CompatibilityGuide'
 import Troubleshooting from './pages/Troubleshooting'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import ResetPassword from './components/auth/ResetPassword'
 import { NotificationProvider } from './contexts/NotificationContext'
 import NotificationManager from './components/NotificationManager'
 
@@ -87,7 +88,7 @@ const AppContent = () => {
   const [selectedComponents, _setSelectedComponents] = useState({})
   const [prebuiltComponentIds, setPrebuiltComponentIds] = useState(null)
   const [user, setUser] = useState(null)
-  const [showAuth, setShowAuth] = useState(null) // null, 'login', 'register'
+  const [showAuth, setShowAuth] = useState(null) // null, 'login', 'register', 'reset-password'
   const [isLoading, setIsLoading] = useState(true)
   const [superAdminTab, setSuperAdminTab] = useState('dashboard');
   // User preference for collapsing (persisted)
@@ -129,6 +130,16 @@ const AppContent = () => {
   useEffect(() => {
     const verifyToken = async () => {
       try {
+        // Check for reset password URL first
+        const urlParams = new URLSearchParams(window.location.search)
+        const resetToken = urlParams.get('token')
+        if (resetToken) {
+          setShowAuth('reset-password')
+          setCurrentPage('reset-password')
+          setIsLoading(false)
+          return
+        }
+        
         // Only attempt refresh if an access token already exists.
         // This prevents silent sign-in using refresh_token on page reload.
         const existing = localStorage.getItem('token')
@@ -202,7 +213,7 @@ const AppContent = () => {
     if (!user && PROTECTED_PAGES.includes(page)) {
       setCurrentPage(page)
       setShowAuth('login')
-    } else if (page === 'login' || page === 'register') {
+    } else if (page === 'login' || page === 'register' || page === 'reset-password') {
       setCurrentPage(page)
       setShowAuth(page)
     } else if (page === 'admin-dashboard' && user?.roles?.includes('Admin')) {
@@ -384,6 +395,9 @@ const AppContent = () => {
             )}
             {showAuth === 'register' && (
               <Register onRegister={() => { setShowAuth('login'); setCurrentPage('login'); }} onSwitchToLogin={() => { setShowAuth('login'); setCurrentPage('login'); }} />
+            )}
+            {showAuth === 'reset-password' && (
+              <ResetPassword onSuccess={() => { setShowAuth('login'); setCurrentPage('login'); }} />
             )}
             {/* main content area - only show when not logging in/registering */}
             {!showAuth && (
@@ -569,6 +583,9 @@ const AppContent = () => {
               )}
               {showAuth === 'register' && (
                 <Register onRegister={() => { setShowAuth('login'); setCurrentPage('login'); }} onSwitchToLogin={() => { setShowAuth('login'); setCurrentPage('login'); }} />
+              )}
+              {showAuth === 'reset-password' && (
+                <ResetPassword onSuccess={() => { setShowAuth('login'); setCurrentPage('login'); }} />
               )}
               {/* main content area - only show when not logging in/registering */}
               {!showAuth && (

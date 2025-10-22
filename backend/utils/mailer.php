@@ -4,6 +4,23 @@
 
 require_once __DIR__ . '/../config/env.php';
 
+// Detect environment and load appropriate mail configuration
+$isLocal = false;
+$host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+if ($host && (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false)) {
+    $isLocal = true;
+}
+$appEnv = env('APP_ENV', '');
+if ($appEnv && strtolower($appEnv) === 'local') {
+    $isLocal = true;
+}
+
+if ($isLocal) {
+    require_once __DIR__ . '/../config/mail_local.php';
+} else {
+    require_once __DIR__ . '/../config/mail_hostinger.php';
+}
+
 // Composer autoload from project root
 $rootVendor = dirname(__DIR__, 2) . '/vendor/autoload.php';
 if (is_readable($rootVendor)) {
@@ -27,9 +44,9 @@ function buildGmailMailer(): array {
 
     $mail = new PHPMailer(true);
     $mail->isSMTP();
-    $mail->Host = env('MAIL_HOST', 'smtp.gmail.com');
-    $mail->Port = (int)env('MAIL_PORT', '587');
-    $mail->SMTPSecure = env('MAIL_ENCRYPTION', 'tls'); // 'tls' or 'ssl'
+    $mail->Host = 'smtp.gmail.com'; // Force Gmail SMTP
+    $mail->Port = 465; // Force Gmail port
+    $mail->SMTPSecure = 'ssl'; // Force SSL
     $mail->SMTPAuth = true;
     $mail->CharSet = 'UTF-8';
     $mail->isHTML(true);
@@ -83,14 +100,9 @@ function buildGmailMailer(): array {
             'userName' => $gmailUser,
         ]));
     } elseif ($authMode === 'gmail_password') {
-        // Strongly recommended to use an App Password (with 2FA) not the account password
-        $gmailUser = env('GMAIL_USER', env('MAIL_USERNAME', ''));
-        $gmailPass = env('GMAIL_APP_PASSWORD', env('MAIL_PASSWORD', ''));
-        if (!$gmailUser || !$gmailPass) {
-            return [null, 'Gmail password auth not configured. Provide GMAIL_USER and GMAIL_APP_PASSWORD.'];
-        }
-        $mail->Username = $gmailUser;
-        $mail->Password = $gmailPass;
+        // Force Gmail credentials for testing
+        $mail->Username = 'kenniellmart@gmail.com';
+        $mail->Password = 'rtwudoaenolfzjsr';
     } else {
         return [null, 'Unsupported MAIL_AUTH mode. Use gmail_oauth or gmail_password.'];
     }

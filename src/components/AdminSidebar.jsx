@@ -24,9 +24,9 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
   // pick the right color based on user role
   const getRoleColor = () => {
     if (!user?.roles) return 'bg-gray-500';
-    if (user.roles.includes('Super Admin')) return 'bg-red-500';
-    if (user.roles.includes('Admin')) return 'bg-purple-500';
-    if (user.roles.includes('Employee')) return 'bg-blue-500';
+    if (user.roles.includes('Super Admin')) return 'bg-green-500';
+    if (user.roles.includes('Admin')) return 'bg-green-500';
+    if (user.roles.includes('Employee')) return 'bg-green-500';
     return 'bg-green-500';
   };
 
@@ -183,7 +183,7 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors ${isCollapsed ? 'justify-center' : 'truncate'} ${
                     (currentPage === 'super-admin-dashboard' && activeSuperAdminTab === tab.id) || 
                     (currentPage === tab.id)
-                      ? 'bg-red-100 text-red-700'
+                      ? 'bg-green-100 text-green-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                   title={tab.name}
@@ -192,7 +192,7 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   {tab.icon}
                   {!isCollapsed && tab.name}
                   {!isCollapsed && tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
-                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-green-600 rounded-full">
                       {notificationsCount}
                     </span>
                   )}
@@ -216,7 +216,7 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   onClick={() => handleAdminNavigation(tab.id, false)}
                   className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors ${isCollapsed ? 'justify-center' : 'truncate'} ${
                     (tab.id === 'dashboard' && currentPage === 'admin-dashboard') || currentPage === tab.id
-                      ? 'bg-purple-100 text-purple-700'
+                      ? 'bg-green-100 text-green-700'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                   title={tab.name}
@@ -225,7 +225,7 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   {tab.icon}
                   {!isCollapsed && <span className="flex-1 text-left">{tab.name}</span>}
                   {!isCollapsed && tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
-                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-green-600 rounded-full">
                       {notificationsCount}
                     </span>
                   )}
@@ -250,7 +250,7 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                   disabled={tab.isDisabled}
                   className={`w-full flex items-center px-3 lg:px-5 py-2 text-xs lg:text-sm font-medium rounded-md transition-colors ${isCollapsed ? 'justify-center' : 'truncate'} ${
                     (tab.id === 'dashboard' && currentPage === 'admin-dashboard') || currentPage === tab.id
-                      ? 'bg-blue-100 text-blue-700'
+                      ? 'bg-green-100 text-green-700'
                       : tab.isDisabled
                         ? 'text-gray-400 cursor-not-allowed opacity-60 bg-gray-50 border border-gray-200'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -264,7 +264,7 @@ const AdminSidebar = ({ currentPage, onPageChange, user, onLogout, onSuperAdminT
                     <Lock className="ml-2 h-4 w-4 text-gray-400" />
                   )}
                   {!isCollapsed && tab.id === 'notifications' && (typeof notificationsCount !== 'undefined' && notificationsCount > 0) && (
-                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                    <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-green-600 rounded-full">
                       {notificationsCount}
                     </span>
                   )}
